@@ -13,7 +13,7 @@ import java.util.concurrent.Future;
 public class ZephyrLanguageServerLauncher {
 
     public static void main(String[] args) throws InterruptedException, ExecutionException {
-        startServer(System.in, System.out);
+        //startServer(System.in, System.out);
     }
 
     /**

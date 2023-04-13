@@ -32,31 +32,6 @@ public class ZephyrTextDocumentService implements TextDocumentService {
         Binder binder = new Binder(syntaxTree, languageServer.getStandardLibrary());
 
         boundProgram = binder.bindProgram();
-
-        if (binder.getDiagnostics().hasErrors() || binder.getDiagnostics().hasWarnings()) {
-            List<Diagnostic> diagnostics = new ArrayList<>();
-
-            for (io.ra6.zephyr.diagnostic.Diagnostic diagnostic : binder.getDiagnostics().asList()) {
-                Diagnostic lspDiagnostic = new Diagnostic();
-                lspDiagnostic.setSeverity(diagnostic.isError() ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning);
-                lspDiagnostic.setMessage(diagnostic.getMessage());
-
-                Position startPosition = new Position(
-                        diagnostic.getLocation().getStartLine(),
-                        diagnostic.getLocation().getSpan().getStart() + 1);
-
-                Position endPosition = new Position(
-                        diagnostic.getLocation().getEndLine(),
-                        diagnostic.getLocation().getSpan().getEnd() + 1);
-
-                lspDiagnostic.setRange(new Range(startPosition, endPosition));
-
-                diagnostics.add(lspDiagnostic);
-            }
-
-            PublishDiagnosticsParams publishDiagnosticsParams = new PublishDiagnosticsParams(didOpenTextDocumentParams.getTextDocument().getUri(), diagnostics);
-            languageServer.languageClient.publishDiagnostics(publishDiagnosticsParams);
-        }
     }
 
     @Override
@@ -68,27 +43,6 @@ public class ZephyrTextDocumentService implements TextDocumentService {
         Binder binder = new Binder(syntaxTree, languageServer.getStandardLibrary());
 
         boundProgram = binder.bindProgram();
-
-        if (binder.getDiagnostics().hasErrors() || binder.getDiagnostics().hasWarnings()) {
-            List<Diagnostic> diagnostics = new ArrayList<>();
-
-            for (io.ra6.zephyr.diagnostic.Diagnostic diagnostic : binder.getDiagnostics().asList()) {
-                Diagnostic lspDiagnostic = new Diagnostic();
-                lspDiagnostic.setSeverity(diagnostic.isError() ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning);
-                lspDiagnostic.setMessage(diagnostic.getMessage());
-                lspDiagnostic.setRange(new Range(new Position(
-                        diagnostic.getLocation().getStartLine(),
-                        diagnostic.getLocation().getSpan().getStart() + 1),
-                        new Position(
-                                diagnostic.getLocation().getEndLine(),
-                                diagnostic.getLocation().getSpan().getEnd() + 1
-                        )));
-                diagnostics.add(lspDiagnostic);
-            }
-
-            PublishDiagnosticsParams publishDiagnosticsParams = new PublishDiagnosticsParams(didChangeTextDocumentParams.getTextDocument().getUri(), diagnostics);
-            languageServer.languageClient.publishDiagnostics(publishDiagnosticsParams);
-        }
     }
 
 
