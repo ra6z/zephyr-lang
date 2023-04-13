@@ -340,6 +340,7 @@ public final class Evaluator {
                 throw new RuntimeException("Array index out of bounds");
             }
 
+            //noinspection unchecked
             ((List<Object>) array).set((Integer) index, value);
             return value;
         }
@@ -423,6 +424,14 @@ public final class Evaluator {
 
         if (BuiltinTypes.isValidLiteralType(calleeValue.getClass())) {
             return evaluateBuiltinFunctionCall(callee, BuiltinTypes.getLiteralType(calleeValue.getClass()), expression.getFunction(), expression.getArguments());
+        }
+
+        if (calleeValue instanceof ArrayList<?>) {
+            FunctionSymbol function = expression.getFunction();
+
+            if (function.getName().equals("copy")) {
+                return new ArrayList<>((List<?>) calleeValue);
+            }
         }
 
         throw new RuntimeException("Unexpected callee type: " + calleeValue.getClass().getSimpleName());
@@ -529,6 +538,14 @@ public final class Evaluator {
                 if (value == null)
                     throw new RuntimeException("Field " + field.getName() + " is not initialized in type " + type.getName());
                 return value;
+            }
+        }
+
+        if (expression.getTarget().getType() instanceof ArrayTypeSymbol) {
+            if (expression.getMember() instanceof FieldSymbol field) {
+                if (field.getName().equals("length")) {
+                    return ((List<?>) instanceValue).size();
+                }
             }
         }
 

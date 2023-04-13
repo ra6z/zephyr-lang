@@ -34,7 +34,7 @@ See: `pub shared fnc main(argc: int, argv: str[]): int`
 
 ### Hello World
 
-```zephyr
+```
 import "std:console";
 
 type Program {
@@ -102,7 +102,10 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
 - [x] Array Types
   - [x] Array creation syntax (e.g. `[0, 1, 2, 3]`)
   - [x] Array indexing syntax (e.g. `array[0]`)
-  - [ ] Array slicing syntax (e.g. `array[0..2]`)
+  - [x] Array fields
+    - [x] `array.length`
+  - [x] Array functions
+    - [x] `array.copy()`
 - [ ] Type aliases (e.g. `type MyType = int;`)
 - [ ] Additional syntax
   - [ ] `for` loops
