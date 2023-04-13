@@ -1,0 +1,1163 @@
+package io.ra6.zephyr.codeanalysis.binding;
+
+import io.ra6.zephyr.Triple;
+import io.ra6.zephyr.Tuple;
+import io.ra6.zephyr.codeanalysis.binding.expressions.*;
+import io.ra6.zephyr.codeanalysis.binding.scopes.BoundProgramScope;
+import io.ra6.zephyr.codeanalysis.binding.scopes.BoundScope;
+import io.ra6.zephyr.codeanalysis.binding.scopes.BoundScopeKind;
+import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
+import io.ra6.zephyr.codeanalysis.binding.statements.*;
+import io.ra6.zephyr.builtin.BuiltinTypes;
+import io.ra6.zephyr.builtin.types.BuiltinType;
+import io.ra6.zephyr.codeanalysis.lowering.Lowerer;
+import io.ra6.zephyr.codeanalysis.symbols.*;
+import io.ra6.zephyr.codeanalysis.syntax.*;
+import io.ra6.zephyr.codeanalysis.syntax.expressions.*;
+import io.ra6.zephyr.codeanalysis.syntax.statements.*;
+import io.ra6.zephyr.diagnostic.DiagnosticBag;
+import io.ra6.zephyr.library.ZephyrLibrary;
+import io.ra6.zephyr.sourcefile.SourceText;
+import io.ra6.zephyr.sourcefile.TextLocation;
+import lombok.Getter;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Stack;
+
+// TODO: When importing a file from a library, that has already been imported somewhere else, we should not re-parse/bind it.
+
+public class Binder {
+    @Getter
+    private final DiagnosticBag diagnostics = new DiagnosticBag();
+
+    private final SyntaxTree syntaxTree;
+    private final ZephyrLibrary standardLibrary;
+
+    private final BoundProgramScope programScope;
+    private BoundScope scope;
+
+    private BinaryOperatorSymbol currentBinaryOperator;
+    private UnaryOperatorSymbol currentUnaryOperator;
+    private CallableSymbol currentFunctionOrConstructor;
+    private TypeSymbol currentType;
+
+    private int labelCounter = 0;
+    private final Stack<Tuple<BoundLabel, BoundLabel>> loopStack = new Stack<>();
+
+    public Binder(SyntaxTree syntaxTree, ZephyrLibrary standardLibrary) {
+        this.syntaxTree = syntaxTree;
+        this.standardLibrary = standardLibrary;
+
+        this.diagnostics.addAll(syntaxTree.getDiagnostics());
+
+        this.programScope = new BoundProgramScope();
+
+        // TODO: declare builtin types#
+        for (BuiltinType type : BuiltinTypes.getBuiltinTypes()) {
+            type.declareAll();
+            programScope.declareType(type.getTypeSymbol());
+        }
+
+        for (BuiltinType type : BuiltinTypes.getBuiltinTypes()) {
+            type.defineAll();
+            programScope.defineType(type.getTypeSymbol(), type.getTypeScope());
+        }
+
+        this.scope = programScope;
+    }
+
+    public BoundProgram bindProgram() {
+        CompilationUnitSyntax root = syntaxTree.getRoot();
+
+        for (StatementSyntax statement : root.getStatements()) {
+            switch (statement.getKind()) {
+                case IMPORT_DECLARATION -> bindImportDeclaration((ImportDeclarationSyntax) statement);
+                case TYPE_DECLARATION -> declareTypeDeclaration((TypeDeclarationSyntax) statement);
+                case EXPORT_DECLARATION -> bindExportDeclaration((ExportDeclarationSyntax) statement);
+                default ->
+                        throw new RuntimeException(statement.getLocation() + " Unexpected statement kind: " + statement.getKind());
+            }
+        }
+
+        for (StatementSyntax statement : root.getStatements()) {
+            if (Objects.requireNonNull(statement.getKind()) == SyntaxKind.TYPE_DECLARATION) {
+                bindTypeDeclaration((TypeDeclarationSyntax) statement);
+            }
+        }
+
+        if (scope.getKind() != BoundScopeKind.PROGRAM) {
+            throw new RuntimeException("Unexpected scope kind: " + scope.getKind());
+        }
+
+        return new BoundProgram(programScope);
+    }
+
+
+    private void bindExportDeclaration(ExportDeclarationSyntax syntax) {
+        String name = syntax.getQualifiedName().getText();
+
+        if (!programScope.isTypeDeclared(name)) {
+            diagnostics.reportUndefinedType(syntax.getQualifiedName().getLocation(), name);
+            return;
+        }
+
+        // check if type is imported
+
+        TypeSymbol type = programScope.getType(name);
+        ExportSymbol export = new ExportSymbol(type);
+
+        if (programScope.isExportDeclared(name)) {
+            diagnostics.reportExportAlreadyDeclared(syntax.getQualifiedName().getLocation(), name);
+            return;
+        }
+
+        programScope.declareExport(export);
+    }
+
+    private void declareTypeDeclaration(TypeDeclarationSyntax syntax) {
+        String typeName = syntax.getIdentifier().getText();
+
+        if (programScope.isTypeDeclared(typeName)) {
+            diagnostics.reportTypeAlreadyDeclared(syntax.getIdentifier().getLocation(), typeName);
+            return;
+        }
+        TypeSymbol type = new TypeSymbol(typeName);
+        programScope.declareType(type);
+
+        BoundTypeScope typeScope = new BoundTypeScope(scope, type);
+        scope = typeScope;
+
+        // Declare first
+        for (StatementSyntax member : syntax.getMembers()) {
+            switch (member.getKind()) {
+                case TYPE_FIELD_DECLARATION -> declareTypeFieldDeclaration((TypeFieldDeclarationSyntax) member);
+                case TYPE_FUNCTION_DECLARATION ->
+                        declareTypeFunctionDeclaration((TypeFunctionDeclarationSyntax) member);
+                case TYPE_BINARY_OPERATOR_DECLARATION ->
+                        declareTypeBinaryOperatorDeclaration((TypeBinaryOperatorDeclarationSyntax) member);
+                case TYPE_CONSTRUCTOR_DECLARATION ->
+                        declareTypeConstructorDeclaration((TypeConstructorDeclarationSyntax) member);
+                case TYPE_UNARY_OPERATOR_DECLARATION ->
+                        declareTypeUnaryOperatorDeclaration((TypeUnaryOperatorDeclarationSyntax) member);
+            }
+        }
+
+        type.setFieldsAndFunctions(typeScope.getDeclaredFieldsAndFunctions());
+        type.setConstructors(typeScope.getDeclaredConstructors());
+        type.setBinaryOperators(typeScope.getDeclaredBinaryOperators());
+        type.setUnaryOperators(typeScope.getDeclaredUnaryOperators());
+
+        scope = scope.getParent();
+        programScope.defineType(type, typeScope);
+        currentType = null;
+    }
+
+    private void bindTypeDeclaration(TypeDeclarationSyntax syntax) {
+        String typeName = syntax.getIdentifier().getText();
+
+        if (!programScope.isTypeDeclared(typeName)) {
+            diagnostics.reportUndefinedType(syntax.getIdentifier().getLocation(), typeName);
+            return;
+        }
+
+        TypeSymbol type = programScope.getType(typeName);
+        currentType = type;
+
+        scope = programScope.getTypeScope(type);
+
+        for (StatementSyntax member : syntax.getMembers()) {
+            switch (member.getKind()) {
+                case TYPE_FIELD_DECLARATION -> bindTypeFieldDeclaration((TypeFieldDeclarationSyntax) member);
+                case TYPE_FUNCTION_DECLARATION -> bindTypeFunctionDeclaration((TypeFunctionDeclarationSyntax) member);
+                case TYPE_CONSTRUCTOR_DECLARATION ->
+                        bindTypeConstructorDeclaration((TypeConstructorDeclarationSyntax) member);
+                case TYPE_BINARY_OPERATOR_DECLARATION ->
+                        bindTypeBinaryOperatorDeclaration((TypeBinaryOperatorDeclarationSyntax) member);
+                case TYPE_UNARY_OPERATOR_DECLARATION ->
+                        bindTypeUnaryOperatorDeclaration((TypeUnaryOperatorDeclarationSyntax) member);
+                default ->
+                        throw new RuntimeException(member.getLocation() + " Unexpected statement kind: " + member.getKind());
+            }
+        }
+
+        scope = scope.getParent();
+        currentType = null;
+    }
+
+    private void declareTypeFieldDeclaration(TypeFieldDeclarationSyntax syntax) {
+        BoundTypeScope typeScope = (BoundTypeScope) scope;
+
+        String fieldName = syntax.getIdentifier().getText();
+
+        if (typeScope.isFieldOrFunctionDeclared(fieldName)) {
+            if (typeScope.isField(fieldName))
+                diagnostics.reportFieldAlreadyDeclared(syntax.getIdentifier().getLocation(), fieldName);
+            else
+                diagnostics.reportFunctionDeclaredButFieldExpected(syntax.getIdentifier().getLocation(), fieldName);
+            return;
+        }
+
+        boolean isReadOnly = syntax.getKeywordToken().getKind() == SyntaxKind.CONST_KEYWORD;
+        boolean isShared = syntax.getSharedToken() != null;
+        Visibility visibility = syntax.getVisibilityToken() == null ? Visibility.PRIVATE : syntax.getVisibilityToken().getKind() == SyntaxKind.PUB_KEYWORD ? Visibility.PUBLIC : Visibility.PRIVATE;
+        TypeSymbol fieldType = bindTypeClause(syntax.getTypeClause());
+
+        if (fieldType == null) {
+            diagnostics.reportUnknownType(syntax.getTypeClause().getTypeName().getLocation(), syntax.getTypeClause().getTypeName().getText());
+            return;
+        }
+
+        FieldSymbol field = new FieldSymbol(fieldName, isReadOnly, isShared, visibility, fieldType);
+        typeScope.declareField(field);
+    }
+
+    private void bindTypeFieldDeclaration(TypeFieldDeclarationSyntax syntax) {
+        BoundTypeScope typeScope = (BoundTypeScope) scope;
+
+        String fieldName = syntax.getIdentifier().getText();
+
+        if (!typeScope.isFieldOrFunctionDeclared(fieldName)) {
+            diagnostics.reportFieldNotDeclared(syntax.getIdentifier().getLocation(), fieldName);
+            return;
+        }
+
+        if (!typeScope.isField(fieldName)) {
+            diagnostics.reportFunctionDeclaredButFieldExpected(syntax.getIdentifier().getLocation(), fieldName);
+            return;
+        }
+
+        FieldSymbol field = typeScope.getField(fieldName);
+
+        BoundExpression initializer = null;
+        if (syntax.getInitializer() != null) {
+            initializer = bindExpression(syntax.getInitializer());
+        }
+
+        if (field.isReadonly() && initializer == null) {
+            diagnostics.reportConstFieldMustHaveInitializer(syntax.getIdentifier().getLocation(), fieldName);
+            return;
+        }
+
+        if (field.getType() == null) {
+            diagnostics.reportUnknownType(syntax.getTypeClause().getTypeName().getLocation(), syntax.getTypeClause().getTypeName().getText());
+            return;
+        }
+
+        if (initializer != null && initializer.getType() != field.getType()) {
+            diagnostics.reportCannotConvert(syntax.getInitializer().getLocation(), initializer.getType(), field.getType());
+            return;
+        }
+
+        typeScope.defineField(field, initializer);
+    }
+
+    private void declareTypeFunctionDeclaration(TypeFunctionDeclarationSyntax syntax) {
+        BoundTypeScope typeScope = (BoundTypeScope) scope;
+        String functionName = syntax.getIdentifier().getText();
+
+        if (typeScope.isFieldOrFunctionDeclared(functionName)) {
+            if (typeScope.isFunction(functionName))
+                diagnostics.reportFunctionAlreadyDeclared(syntax.getIdentifier().getLocation(), functionName);
+            else
+                diagnostics.reportFieldDeclaredButFunctionExpected(syntax.getIdentifier().getLocation(), functionName);
+            return;
+        }
+
+        boolean isShared = syntax.getSharedToken() != null;
+        Visibility visibility = syntax.getVisibilityToken() == null ? Visibility.PRIVATE : syntax.getVisibilityToken().getKind() == SyntaxKind.PUB_KEYWORD ? Visibility.PUBLIC : Visibility.PRIVATE;
+
+        List<ParameterSymbol> parameters = bindParameters(syntax.getParameters());
+        TypeSymbol returnType = bindTypeClause(syntax.getTypeClause());
+
+        if (returnType == null) {
+            diagnostics.reportUnknownType(syntax.getTypeClause().getTypeName().getLocation(), syntax.getTypeClause().getTypeName().getText());
+            return;
+        }
+
+        FunctionSymbol function = new FunctionSymbol(functionName, isShared, visibility, parameters, returnType);
+        typeScope.declareFunction(function);
+    }
+
+    private void bindTypeFunctionDeclaration(TypeFunctionDeclarationSyntax syntax) {
+        BoundTypeScope typeScope = (BoundTypeScope) scope;
+        String functionName = syntax.getIdentifier().getText();
+
+        if (!typeScope.isFieldOrFunctionDeclared(functionName)) {
+            diagnostics.reportFunctionNotDeclared(syntax.getIdentifier().getLocation(), functionName);
+            return;
+        }
+
+        if (!typeScope.isFunction(functionName)) {
+            diagnostics.reportFieldDeclaredButFunctionExpected(syntax.getIdentifier().getLocation(), functionName);
+            return;
+        }
+
+        FunctionSymbol function = typeScope.getFunction(functionName);
+        currentFunctionOrConstructor = function;
+
+        BoundBlockStatement body = Lowerer.lower(function, bindBlockStatement(syntax.getBody()));
+
+        currentFunctionOrConstructor = null;
+        typeScope.defineFunction(function, body);
+    }
+
+    private BoundBlockStatement bindBlockStatement(BlockStatementSyntax syntax) {
+        scope = new BoundScope(scope, BoundScopeKind.BLOCK);
+        List<BoundStatement> statements = new ArrayList<>();
+
+        for (StatementSyntax statement : syntax.getStatements()) {
+            BoundStatement boundStatement = bindStatement(statement);
+            statements.add(boundStatement);
+        }
+
+        scope = scope.getParent();
+        return new BoundBlockStatement(syntax, statements);
+    }
+
+    private BoundStatement bindStatement(StatementSyntax syntax) {
+        return switch (syntax.getKind()) {
+            case VARIABLE_DECLARATION -> bindVariableDeclaration((VariableDeclarationSyntax) syntax);
+            case EXPRESSION_STATEMENT -> bindExpressionStatement((ExpressionStatementSyntax) syntax);
+            case RETURN_STATEMENT -> bindReturnStatement((ReturnStatementSyntax) syntax);
+            case IF_STATEMENT -> bindIfStatement((IfStatementSyntax) syntax);
+            case WHILE_STATEMENT -> bindWhileStatement((WhileStatementSyntax) syntax);
+            case FOR_STATEMENT -> bindForStatement((ForStatementSyntax) syntax);
+            case BREAK_STATEMENT -> bindBreakStatement((BreakStatementSyntax) syntax);
+            case CONTINUE_STATEMENT -> bindContinueStatement((ContinueStatementSyntax) syntax);
+            case BLOCK_STATEMENT -> bindBlockStatement((BlockStatementSyntax) syntax);
+            case DO_WHILE_STATEMENT -> bindDoWhileStatement((DoWhileStatementSyntax) syntax);
+            default ->
+                    throw new RuntimeException(syntax.getLocation() + " Unexpected statement kind: " + syntax.getKind());
+        };
+    }
+
+    private BoundStatement bindDoWhileStatement(DoWhileStatementSyntax syntax) {
+        diagnostics.reportTodoFeature(syntax.getLocation(), "do-while statement");
+        return bindErrorStatement(syntax);
+    }
+
+    private BoundStatement bindContinueStatement(ContinueStatementSyntax syntax) {
+        if (loopStack.isEmpty()) {
+            diagnostics.reportInvalidBreakOrContinue(syntax.getLocation(), syntax.getContinueKeyword().getText());
+            return bindErrorStatement(syntax);
+        }
+
+        BoundLabel continueLabel = loopStack.peek().getItem1();
+        return new BoundGotoStatement(syntax, continueLabel);
+    }
+
+    private BoundStatement bindBreakStatement(BreakStatementSyntax syntax) {
+        if (loopStack.isEmpty()) {
+            diagnostics.reportInvalidBreakOrContinue(syntax.getLocation(), syntax.getBreakKeyword().getText());
+            return bindErrorStatement(syntax);
+        }
+
+        BoundLabel breakLabel = loopStack.peek().getItem2();
+        return new BoundGotoStatement(syntax, breakLabel);
+    }
+
+    private BoundStatement bindForStatement(ForStatementSyntax syntax) {
+        diagnostics.reportTodoFeature(syntax.getLocation(), "for statement");
+        return bindErrorStatement(syntax);
+    }
+
+    private BoundStatement bindWhileStatement(WhileStatementSyntax syntax) {
+        BoundExpression condition = bindExpression(syntax.getCondition());
+
+        if (condition.getType() != BuiltinTypes.BOOL) {
+            diagnostics.reportCannotConvert(syntax.getCondition().getLocation(), condition.getType(), BuiltinTypes.BOOL);
+            return bindErrorStatement(syntax);
+        }
+
+        Triple<BoundStatement, BoundLabel, BoundLabel> boundBody = bindLoopBody(syntax.getBody());
+
+        return new BoundWhileStatement(syntax, condition, boundBody.getItem1(), boundBody.getItem2(), boundBody.getItem3());
+    }
+
+    private Triple<BoundStatement, BoundLabel, BoundLabel> bindLoopBody(StatementSyntax body) {
+        labelCounter++;
+
+        BoundLabel breakLabel = new BoundLabel("break$" + labelCounter);
+        BoundLabel continueLabel = new BoundLabel("continue$" + labelCounter);
+
+        loopStack.push(new Tuple<>(continueLabel, breakLabel));
+        BoundStatement boundBody = bindStatement(body);
+        loopStack.pop();
+
+        return new Triple<>(boundBody, continueLabel, breakLabel);
+    }
+
+    private BoundStatement bindIfStatement(IfStatementSyntax syntax) {
+        BoundExpression condition = bindExpression(syntax.getCondition());
+
+        if (condition.getType() != BuiltinTypes.BOOL) {
+            diagnostics.reportCannotConvert(syntax.getCondition().getLocation(), condition.getType(), BuiltinTypes.BOOL);
+            return bindErrorStatement(syntax);
+        }
+
+        BoundStatement thenStatement = bindStatement(syntax.getThenStatement());
+        BoundStatement elseStatement = syntax.getElseClause() == null ? null : bindStatement(syntax.getElseClause().getElseStatement());
+
+        return new BoundIfStatement(syntax, condition, thenStatement, elseStatement);
+    }
+
+    private BoundStatement bindReturnStatement(ReturnStatementSyntax syntax) {
+        BoundExpression expression = syntax.getExpression() == null ? null : bindExpression(syntax.getExpression());
+
+        if (currentFunctionOrConstructor instanceof ConstructorSymbol && expression != null) {
+            diagnostics.cannotReturnExpressionOnConstructor(syntax.getLocation());
+            return bindErrorStatement(syntax);
+        }
+
+        if (currentFunctionOrConstructor instanceof ConstructorSymbol) {
+            return new BoundReturnStatement(syntax, null);
+        }
+
+        if (currentBinaryOperator != null) {
+            if (expression == null) {
+                diagnostics.cannotReturnVoidOnNonVoidFunction(syntax.getLocation());
+                return bindErrorStatement(syntax);
+            }
+
+            return new BoundReturnStatement(syntax, expression);
+        }
+
+        if (currentUnaryOperator != null) {
+            if (expression == null) {
+                diagnostics.cannotReturnVoidOnNonVoidFunction(syntax.getLocation());
+                return bindErrorStatement(syntax);
+            }
+
+            return new BoundReturnStatement(syntax, expression);
+        }
+
+        if (!(currentFunctionOrConstructor instanceof FunctionSymbol currentFunction)) {
+            diagnostics.reportInvalidReturn(syntax.getLocation());
+            return bindErrorStatement(syntax);
+        }
+
+        if (currentFunction.getType() == BuiltinTypes.VOID && expression != null) {
+            diagnostics.cannotReturnExpressionOnVoidFunction(syntax.getLocation());
+            return bindErrorStatement(syntax);
+        }
+
+        if (currentFunction.getType() != BuiltinTypes.VOID && expression == null) {
+            diagnostics.cannotReturnVoidOnNonVoidFunction(syntax.getLocation());
+            return bindErrorStatement(syntax);
+        }
+
+        if (expression != null && expression.getType() != currentFunction.getType()) {
+            diagnostics.reportInvalidReturnExpression(syntax.getExpression().getLocation(), expression.getType(), currentFunction.getType());
+            return bindErrorStatement(syntax);
+        }
+
+        return new BoundReturnStatement(syntax, expression);
+    }
+
+    private BoundStatement bindExpressionStatement(ExpressionStatementSyntax syntax) {
+        return new BoundExpressionStatement(syntax, bindExpression(syntax.getExpression()));
+    }
+
+    private BoundStatement bindVariableDeclaration(VariableDeclarationSyntax syntax) {
+        String variableName = syntax.getIdentifier().getText();
+
+        if (scope.isVariableDeclared(variableName)) {
+            diagnostics.reportVariableAlreadyDeclared(syntax.getIdentifier().getLocation(), variableName);
+            return bindErrorStatement(syntax);
+        }
+
+        boolean isReadOnly = syntax.getKeywordToken().getKind() == SyntaxKind.CONST_KEYWORD;
+        TypeSymbol variableType = bindTypeClause(syntax.getTypeClause());
+
+        BoundExpression initializer = null;
+        if (syntax.getInitializer() != null) {
+            initializer = bindExpression(syntax.getInitializer());
+        }
+
+        if (isReadOnly && initializer == null) {
+            diagnostics.reportConstVariableMustBeInitialized(syntax.getLocation(), variableName);
+            return bindErrorStatement(syntax);
+        }
+
+        if (variableType == null) {
+            diagnostics.reportUnknownType(syntax.getTypeClause().getTypeName().getLocation(), syntax.getTypeClause().getTypeName().getText());
+            return bindErrorStatement(syntax);
+        }
+
+        if (initializer != null && initializer.getType() != variableType) {
+            diagnostics.reportCannotConvert(syntax.getInitializer().getLocation(), initializer.getType(), variableType);
+            return bindErrorStatement(syntax);
+        }
+
+        VariableSymbol variableSymbol = new VariableSymbol(variableName, isReadOnly, variableType);
+        scope.defineVariable(variableSymbol, initializer);
+
+        return new BoundVariableDeclaration(syntax, variableSymbol, initializer);
+    }
+
+    private List<ParameterSymbol> bindParameters(SeparatedSyntaxList<ParameterSyntax> parameters) {
+        List<ParameterSymbol> parameterSymbols = new ArrayList<>();
+        List<String> seenParameterNames = new ArrayList<>();
+
+        for (ParameterSyntax parameter : parameters) {
+            String parameterName = parameter.getIdentifier().getText();
+            if (seenParameterNames.contains(parameterName)) {
+                diagnostics.reportParameterAlreadyDeclared(parameter.getIdentifier().getLocation(), parameterName);
+                continue;
+            }
+
+            TypeSymbol parameterType = bindTypeClause(parameter.getTypeClause());
+            if (parameterType == null) {
+                diagnostics.reportUnknownType(parameter.getTypeClause().getTypeName().getLocation(), parameter.getTypeClause().getTypeName().getText());
+                continue;
+            }
+
+            ParameterSymbol parameterSymbol = new ParameterSymbol(parameterName, parameterType);
+            parameterSymbols.add(parameterSymbol);
+            seenParameterNames.add(parameterName);
+        }
+
+        return parameterSymbols;
+    }
+
+
+    private void declareTypeConstructorDeclaration(TypeConstructorDeclarationSyntax syntax) {
+        BoundTypeScope typeScope = (BoundTypeScope) scope;
+
+        List<ParameterSymbol> parameters = bindParameters(syntax.getParameters());
+        if (typeScope.isConstructorDefined(parameters.size())) {
+            diagnostics.reportConstructorParameterWithCountAlreadyDefined(TextLocation.fromLocations(syntax.getConstructorKeyword().getLocation(), syntax.getCloseParenToken().getLocation()), parameters.size());
+            return;
+        }
+
+        ConstructorSymbol constructor = new ConstructorSymbol(parameters);
+        typeScope.declareConstructor(constructor);
+    }
+
+    private void bindTypeConstructorDeclaration(TypeConstructorDeclarationSyntax syntax) {
+        BoundTypeScope typeScope = (BoundTypeScope) scope;
+
+        List<ParameterSymbol> parameters = bindParameters(syntax.getParameters());
+        if (!typeScope.isConstructorDefined(parameters.size())) {
+            diagnostics.reportConstructorParameterWithCountNotDefined(TextLocation.fromLocations(syntax.getConstructorKeyword().getLocation(), syntax.getCloseParenToken().getLocation()), currentType, parameters.size());
+            return;
+        }
+
+        ConstructorSymbol constructor = typeScope.getType().getConstructor(parameters.size());
+        currentFunctionOrConstructor = constructor;
+
+        BoundBlockStatement body = bindBlockStatement(syntax.getBody());
+
+        currentFunctionOrConstructor = null;
+        typeScope.defineConstructor(constructor, body);
+    }
+
+
+    private void declareTypeBinaryOperatorDeclaration(TypeBinaryOperatorDeclarationSyntax syntax) {
+        BoundTypeScope typeScope = (BoundTypeScope) scope;
+        String operatorName = syntax.getOperatorToken().getText();
+
+        TypeSymbol right = bindTypeClause(syntax.getRightOperandType());
+        TypeSymbol result = bindTypeClause(syntax.getReturnType());
+
+        if (right == null) {
+            diagnostics.reportUnknownType(syntax.getRightOperandType().getTypeName().getLocation(), syntax.getRightOperandType().getTypeName().getText());
+            return;
+        }
+
+        if (result == null) {
+            diagnostics.reportUnknownType(syntax.getReturnType().getTypeName().getLocation(), syntax.getReturnType().getTypeName().getText());
+            return;
+        }
+
+        String rightOperandName = syntax.getRightOperandToken().getText();
+
+        if (typeScope.isBinaryOperatorDeclared(operatorName, right)) {
+            diagnostics.reportBinaryOperatorAlreadyDeclared(syntax.getOperatorToken().getLocation(), operatorName, typeScope.getType(), right);
+            return;
+        }
+
+        BinaryOperatorSymbol operator = new BinaryOperatorSymbol(operatorName, rightOperandName, right, typeScope.getType());
+        typeScope.declareBinaryOperator(operator);
+    }
+
+    private void bindTypeBinaryOperatorDeclaration(TypeBinaryOperatorDeclarationSyntax syntax) {
+        BoundTypeScope typeScope = (BoundTypeScope) scope;
+        String operatorName = syntax.getOperatorToken().getText();
+        TypeSymbol returnType = bindTypeClause(syntax.getReturnType());
+
+        if (returnType == BuiltinTypes.VOID) {
+            diagnostics.reportUnaryOperatorCannotBeVoid(syntax.getReturnType().getTypeName().getLocation(), operatorName);
+            return;
+        }
+
+        if (!typeScope.isBinaryOperatorDeclared(operatorName, typeScope.getType())) {
+            diagnostics.reportBinaryOperatorNotDeclared(syntax.getOperatorToken().getLocation(), operatorName, typeScope.getType());
+            return;
+        }
+
+        BinaryOperatorSymbol operator = typeScope.getBinaryOperator(operatorName, typeScope.getType());
+        currentBinaryOperator = operator;
+
+        BoundBlockStatement body = bindBlockStatement(syntax.getBody());
+
+        currentBinaryOperator = null;
+        typeScope.defineBinaryOperator(operator, body);
+    }
+
+    private void declareTypeUnaryOperatorDeclaration(TypeUnaryOperatorDeclarationSyntax syntax) {
+        BoundTypeScope typeScope = (BoundTypeScope) scope;
+        String operatorName = syntax.getOperatorToken().getText();
+        TypeSymbol returnType = bindTypeClause(syntax.getReturnType());
+
+        if (returnType == BuiltinTypes.VOID) {
+            diagnostics.reportUnaryOperatorCannotBeVoid(syntax.getReturnType().getTypeName().getLocation(), operatorName);
+            return;
+        }
+
+        if (typeScope.isUnaryOperatorDeclared(operatorName)) {
+            diagnostics.reportUnaryOperatorAlreadyDeclared(syntax.getOperatorToken().getLocation(), operatorName);
+            return;
+        }
+
+        UnaryOperatorSymbol operator = new UnaryOperatorSymbol(operatorName, returnType);
+        typeScope.declareUnaryOperator(operator);
+    }
+
+    private void bindTypeUnaryOperatorDeclaration(TypeUnaryOperatorDeclarationSyntax syntax) {
+        BoundTypeScope typeScope = (BoundTypeScope) scope;
+        String operatorName = syntax.getOperatorToken().getText();
+
+        if (!typeScope.isUnaryOperatorDeclared(operatorName)) {
+            diagnostics.reportUnaryOperatorNotDeclared(syntax.getOperatorToken().getLocation(), operatorName, typeScope.getType());
+            return;
+        }
+
+        UnaryOperatorSymbol operator = typeScope.getUnaryOperator(operatorName);
+        currentUnaryOperator = operator;
+
+        BoundBlockStatement body = bindBlockStatement(syntax.getBody());
+
+        currentUnaryOperator = null;
+        typeScope.defineUnaryOperator(operator, body);
+    }
+
+    private void bindImportDeclaration(ImportDeclarationSyntax syntax) {
+        System.out.println("Importing: '" + syntax.getStringToken().getValue() + "'");
+        try {
+            String pathToImport = (String) syntax.getStringToken().getValue();
+            boolean isStd = pathToImport.startsWith("std:");
+            String path = isStd ? standardLibrary.getLibraryPath(pathToImport) : pathToImport;
+
+            SourceText importedSourceText = SourceText.fromFile(path);
+            SyntaxTree importedSyntaxTree = SyntaxTree.parse(importedSourceText);
+            Binder importedBinder = new Binder(importedSyntaxTree, standardLibrary);
+            BoundProgram importedProgram = importedBinder.bindProgram();
+
+            if (importedBinder.diagnostics.hasErrors()) {
+                diagnostics.reportImportError(syntax.getStringToken().getLocation(), "Imported program has errors");
+                diagnostics.addAll(importedBinder.diagnostics);
+                return;
+            }
+
+            for (ExportSymbol export : importedProgram.getExports()) {
+                TypeSymbol type = export.getType();
+
+                if (programScope.isTypeDeclared(type.getName())) {
+                    diagnostics.reportImportError(syntax.getStringToken().getLocation(), "Type '" + type.getName() + "' is already declared");
+                    continue;
+                }
+
+                if (programScope.isTypeImported(type.getName())) {
+                    diagnostics.reportImportError(syntax.getStringToken().getLocation(), "Type '" + type.getName() + "' is already imported");
+                    continue;
+                }
+
+                programScope.importType(type, importedProgram.getProgramScope().getTypeScope(type));
+                System.out.println("Imported type: '" + type.getName() + "'");
+            }
+
+            System.out.println("Imported program: '" + syntax.getStringToken().getValue() + "'");
+        } catch (Exception e) {
+            diagnostics.reportImportError(syntax.getStringToken().getLocation(), e.getMessage());
+        }
+    }
+
+    private BoundExpression bindExpression(ExpressionSyntax syntax) {
+        return switch (syntax.getKind()) {
+            case PARENTHESIZED_EXPRESSION -> bindParenthesizedExpression((ParenthesizedExpressionSyntax) syntax);
+            case LITERAL_EXPRESSION -> bindLiteralExpression((LiteralExpressionSyntax) syntax);
+            case BINARY_EXPRESSION -> bindBinaryExpression((BinaryExpressionSyntax) syntax);
+            case UNARY_EXPRESSION -> bindUnaryExpression((UnaryExpressionSyntax) syntax);
+            case CONDITIONAL_EXPRESSION -> bindConditionalExpression((ConditionalExpressionSyntax) syntax);
+            case INSTANCE_CREATION_EXPRESSION ->
+                    bindInstanceCreationExpression((InstanceCreationExpressionSyntax) syntax);
+            case MEMBER_ACCESS_EXPRESSION -> bindMemberAccessExpression((MemberAccessExpressionSyntax) syntax);
+            case NAME_EXPRESSION -> bindNameExpression((NameExpressionSyntax) syntax);
+            case ASSIGNMENT_EXPRESSION -> bindAssignmentExpression((AssignmentExpressionSyntax) syntax);
+            case ARRAY_ACCESS_EXPRESSION -> bindArrayAccessExpression((ArrayAccessExpressionSyntax) syntax);
+            case METHOD_CALL_EXPRESSION -> bindMethodCallExpression((MethodCallExpressionSyntax) syntax);
+
+            default -> bindErrorExpression(syntax);
+        };
+    }
+
+    private BoundExpression bindAssignmentExpression(AssignmentExpressionSyntax syntax) {
+        BoundExpression target = bindExpression(syntax.getLeft());
+        BoundExpression expression = bindExpression(syntax.getRight());
+
+        if (target instanceof BoundVariableExpression variable) {
+            VariableSymbol variableSymbol = variable.getVariable();
+            if (variableSymbol.isReadonly()) {
+                diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), variableSymbol.getName());
+                return bindErrorExpression(syntax);
+            }
+
+            if (variableSymbol.getType() != expression.getType()) {
+                diagnostics.reportCannotConvert(syntax.getRight().getLocation(), expression.getType(), variableSymbol.getType());
+                return bindErrorExpression(syntax);
+            }
+
+            if (syntax.getOperatorToken().getKind() != SyntaxKind.EQUALS_TOKEN) {
+                diagnostics.reportTodoFeature(syntax.getOperatorToken().getLocation(), "Compound assignment");
+                return bindErrorExpression(syntax);
+            }
+
+            return new BoundAssignmentExpression(syntax, variable, expression);
+        } else if (target instanceof BoundFieldAccessExpression field) {
+            FieldSymbol fieldSymbol = field.getField();
+            if (fieldSymbol.isReadonly()) {
+                diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), fieldSymbol.getName());
+                return bindErrorExpression(syntax);
+            }
+
+            if (fieldSymbol.getType() != expression.getType()) {
+                diagnostics.reportCannotConvert(syntax.getRight().getLocation(), expression.getType(), fieldSymbol.getType());
+                return bindErrorExpression(syntax);
+            }
+
+            if (syntax.getOperatorToken().getKind() != SyntaxKind.EQUALS_TOKEN) {
+                diagnostics.reportTodoFeature(syntax.getOperatorToken().getLocation(), "Compound assignment");
+                return bindErrorExpression(syntax);
+            }
+
+            return new BoundAssignmentExpression(syntax, field, expression);
+        } else if (target instanceof BoundMemberAccessExpression memberAccessExpression) {
+            if (memberAccessExpression.getMember() instanceof VariableSymbol variable) {
+                if (variable.isReadonly()) {
+                    diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), variable.getName());
+                    return bindErrorExpression(syntax);
+                }
+
+                if (variable.getType() != expression.getType()) {
+                    diagnostics.reportCannotConvert(syntax.getRight().getLocation(), expression.getType(), variable.getType());
+                    return bindErrorExpression(syntax);
+                }
+
+                if (syntax.getOperatorToken().getKind() != SyntaxKind.EQUALS_TOKEN) {
+                    diagnostics.reportTodoFeature(syntax.getOperatorToken().getLocation(), "Compound assignment");
+                    return bindErrorExpression(syntax);
+                }
+
+                return new BoundAssignmentExpression(syntax, memberAccessExpression, expression);
+            } else if (memberAccessExpression.getMember() instanceof FieldSymbol field) {
+                if (field.isReadonly()) {
+                    diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), field.getName());
+                    return bindErrorExpression(syntax);
+                }
+
+                if (field.getType() != expression.getType()) {
+                    diagnostics.reportCannotConvert(syntax.getRight().getLocation(), expression.getType(), field.getType());
+                    return bindErrorExpression(syntax);
+                }
+
+                if (syntax.getOperatorToken().getKind() != SyntaxKind.EQUALS_TOKEN) {
+                    diagnostics.reportTodoFeature(syntax.getOperatorToken().getLocation(), "Compound assignment");
+                    return bindErrorExpression(syntax);
+                }
+
+                return new BoundAssignmentExpression(syntax, memberAccessExpression, expression);
+            } else {
+                diagnostics.reportInvalidAssignmentTarget(syntax.getLeft().getLocation(), target.getSyntax());
+                return bindErrorExpression(syntax);
+            }
+        } else {
+            diagnostics.reportInvalidAssignmentTarget(syntax.getLeft().getLocation(), target.getSyntax());
+            return bindErrorExpression(syntax);
+        }
+    }
+
+    private BoundExpression bindArrayAccessExpression(ArrayAccessExpressionSyntax syntax) {
+        diagnostics.reportTodoFeature(syntax.getLocation(), "Array access");
+        return bindErrorExpression(syntax);
+    }
+
+    private BoundExpression bindMemberAccessExpression(MemberAccessExpressionSyntax syntax) {
+        BoundExpression target = bindExpression(syntax.getTarget());
+        String member = syntax.getMember().getText();
+
+        if (target instanceof BoundErrorExpression) {
+            return target;
+        }
+
+        if (target instanceof BoundTypeExpression type) {
+            TypeSymbol typeSymbol = type.getType();
+            if (typeSymbol.isFieldOrFunctionDeclared(member)) {
+                BoundExpression result = bindAndCheckMemberAccess(syntax, target, member, typeSymbol);
+                if (result != null) return result;
+                return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
+            }
+        }
+
+        if (target instanceof BoundVariableExpression variable) {
+            TypeSymbol typeSymbol = variable.getVariable().getType();
+            if (typeSymbol.isFieldOrFunctionDeclared(member)) {
+                BoundExpression result = bindAndCheckMemberAccess(syntax, target, member, typeSymbol);
+                if (result != null) return result;
+
+                return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
+            }
+
+            diagnostics.reportUndefinedMember(syntax.getMember().getLocation(), typeSymbol.getName(), member);
+            return bindErrorExpression(syntax);
+        }
+
+        if (target instanceof BoundFieldAccessExpression field) {
+            TypeSymbol typeSymbol = field.getField().getType();
+            if (typeSymbol.isFieldOrFunctionDeclared(member)) {
+                BoundExpression result = bindAndCheckMemberAccess(syntax, target, member, typeSymbol);
+                if (result != null) return result;
+
+                return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
+            }
+        }
+
+        if (target instanceof BoundThisExpression) {
+            TypeSymbol typeSymbol = currentType;
+            if (typeSymbol.isFieldOrFunctionDeclared(member)) {
+                BoundExpression result = bindAndCheckMemberAccess(syntax, target, member, typeSymbol);
+                if (result != null) return result;
+
+                return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
+            }
+        }
+
+        TypeSymbol typeSymbol = target.getType();
+        if (typeSymbol.isFieldOrFunctionDeclared(member)) {
+            BoundExpression result = bindAndCheckMemberAccess(syntax, target, member, typeSymbol);
+            if (result != null) return result;
+
+            return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
+        }
+
+        diagnostics.reportInvalidMemberAccess(syntax.getTarget().getLocation(), target.getSyntax());
+        return bindErrorExpression(syntax);
+    }
+
+    private BoundExpression bindAndCheckMemberAccess(MemberAccessExpressionSyntax syntax, BoundExpression target, String member, TypeSymbol typeSymbol) {
+        if (typeSymbol.getFieldOrFunction(member) instanceof FieldSymbol field) {
+            if (field.getVisibility() == Visibility.PRIVATE && !currentType.equals(typeSymbol)) {
+                diagnostics.reportCannotAccessPrivateMember(syntax.getMember().getLocation(), typeSymbol.getName(), member);
+                return bindErrorExpression(syntax);
+            }
+            return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
+        }
+
+        if (typeSymbol.getFieldOrFunction(member) instanceof FunctionSymbol function) {
+            if (function.getVisibility() == Visibility.PRIVATE && !currentType.equals(typeSymbol)) {
+                diagnostics.reportCannotAccessPrivateMember(syntax.getMember().getLocation(), typeSymbol.getName(), member);
+                return bindErrorExpression(syntax);
+            }
+            return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
+        }
+        return null;
+    }
+
+    private BoundExpression bindNameExpression(NameExpressionSyntax syntax) {
+        String name = syntax.getIdentifier().getText();
+        VariableSymbol variable = scope.getVariable(name);
+
+        if (name.equals("this") && (currentFunctionOrConstructor != null ||
+                currentBinaryOperator != null ||
+                currentUnaryOperator != null)) {
+            return new BoundThisExpression(syntax, currentType);
+        }
+
+        if (variable == null) {
+            if (currentFunctionOrConstructor != null) {
+                if (currentFunctionOrConstructor.getParameters().stream().anyMatch(p -> p.getName().equals(name))) {
+                    ParameterSymbol parameterSymbol = currentFunctionOrConstructor.getParameter(name);
+                    VariableSymbol parameterVariable = new VariableSymbol(name, true, parameterSymbol.getType());
+
+                    return new BoundVariableExpression(syntax, parameterVariable);
+                }
+
+                if (programScope.isTypeDeclared(name)) {
+                    TypeSymbol type = programScope.getType(name);
+                    return new BoundTypeExpression(syntax, type);
+                }
+            }
+
+            if (currentBinaryOperator != null) {
+                if (name.equals(currentBinaryOperator.getOtherOperandName())) {
+                    return new BoundVariableExpression(syntax, new VariableSymbol(name, true, currentBinaryOperator.getOtherType()));
+                }
+            }
+
+            diagnostics.reportUndefinedName(syntax.getIdentifier().getLocation(), name);
+            return bindErrorExpression(syntax);
+        }
+
+
+        return new BoundVariableExpression(syntax, variable);
+    }
+
+    private BoundExpression bindInstanceCreationExpression(InstanceCreationExpressionSyntax syntax) {
+        String typeName = syntax.getQualifiedName().getText();
+        TypeSymbol type = programScope.getType(typeName);
+
+        if (type == null) {
+            diagnostics.reportUnknownType(syntax.getQualifiedName().getLocation(), typeName);
+            return bindErrorExpression(syntax);
+        }
+
+        List<BoundExpression> arguments = new ArrayList<>();
+        for (ExpressionSyntax argument : syntax.getArguments()) {
+            arguments.add(bindExpression(argument));
+        }
+
+        if (!type.isConstructorDefined(arguments.size())) {
+            diagnostics.reportConstructorParameterWithCountNotDefined(syntax.getNewKeyword().getLocation(), type, arguments.size());
+            return bindErrorExpression(syntax);
+        }
+
+        ConstructorSymbol constructor = type.getConstructor(arguments.size());
+        if (!checkArguments(constructor.getParameters(), arguments, syntax.getArguments())) {
+            return bindErrorExpression(syntax);
+        }
+
+        return new BoundInstanceCreationExpression(syntax, type, arguments);
+    }
+
+    private boolean checkArguments(List<ParameterSymbol> parameters, List<BoundExpression> boundArguments, SeparatedSyntaxList<ExpressionSyntax> argumentsSyntaxes) {
+        for (int i = 0; i < parameters.size(); i++) {
+            ParameterSymbol parameter = parameters.get(i);
+            BoundExpression argument = boundArguments.get(i);
+            ExpressionSyntax argumentSyntax = argumentsSyntaxes.get(i);
+
+            if (parameter.getType() != argument.getType()) {
+                diagnostics.reportMismatchingTypes(argumentSyntax.getLocation(), parameter.getType(), argument.getType());
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private BoundExpression bindMethodCallExpression(MethodCallExpressionSyntax syntax) {
+        List<BoundExpression> boundArguments = new ArrayList<>();
+        for (ExpressionSyntax argument : syntax.getArguments()) {
+            boundArguments.add(bindExpression(argument));
+        }
+
+        BoundExpression callee = bindExpression(syntax.getCallee());
+        if (callee instanceof BoundErrorExpression) {
+            return callee;
+        }
+
+        if (callee instanceof BoundMemberAccessExpression member) {
+            BoundExpression target = member.getTarget();
+
+            if (target instanceof BoundErrorExpression) {
+                return target;
+            }
+
+            /*
+            if (member.getMember() instanceof FunctionSymbol function) {
+                if (!checkArguments(function.getParameters(), boundArguments, syntax.getArguments())) {
+                    diagnostics.reportArgumentMismatch(syntax.getLocation(), function, boundArguments);
+                    return bindErrorExpression(syntax);
+                }
+
+                return new BoundMethodCallExpression(syntax, target, function, boundArguments);
+            }
+             */
+
+            if (target instanceof BoundVariableExpression variable) {
+                // instance access
+                FunctionSymbol function = variable.getVariable().getType().getFunction(member.getMember().getName(), false);
+
+                if (function == null) {
+                    diagnostics.reportFunctionNotDeclared(syntax.getLocation(), member.getMember().getName());
+                    return bindErrorExpression(syntax);
+                }
+
+                if (!checkArguments(function.getParameters(), boundArguments, syntax.getArguments())) {
+                    diagnostics.reportArgumentMismatch(syntax.getLocation(), function, boundArguments);
+                    return bindErrorExpression(syntax);
+                }
+
+                return new BoundMethodCallExpression(syntax, target, function, boundArguments);
+            }
+
+            if (target instanceof BoundTypeExpression type) {
+                // static access
+
+                FunctionSymbol function = type.getType().getFunction(member.getMember().getName(), true);
+
+                if (function == null) {
+                    diagnostics.reportFunctionNotDeclared(syntax.getLocation(), member.getMember().getName());
+                    return bindErrorExpression(syntax);
+                }
+
+                if (!checkArguments(function.getParameters(), boundArguments, syntax.getArguments())) {
+                    diagnostics.reportArgumentMismatch(syntax.getLocation(), function, boundArguments);
+                    return bindErrorExpression(syntax);
+                }
+
+                return new BoundMethodCallExpression(syntax, target, function, boundArguments);
+            }
+
+            if (target instanceof BoundFieldAccessExpression field) {
+                // instance access
+
+                diagnostics.reportTodoFeature(syntax.getLocation(), "Method call on field");
+                return bindErrorExpression(syntax);
+            }
+
+            TypeSymbol type = member.getTarget().getType();
+            return new BoundMethodCallExpression(syntax, target, type.getFunction(member.getMember().getName(), false), boundArguments);
+        }
+
+        if (callee instanceof BoundLiteralExpression literal) {
+            diagnostics.reportTodoFeature(syntax.getLocation(), "Method call on literal");
+            return bindErrorExpression(syntax);
+        }
+
+        if (callee instanceof BoundThisExpression thisExpression) {
+            diagnostics.reportCannotCallThis(syntax.getLocation());
+            return bindErrorExpression(syntax);
+        }
+
+        diagnostics.reportTodoFeature(syntax.getLocation(), "Method call on other types");
+        return bindErrorExpression(syntax);
+    }
+
+    private BoundExpression bindConditionalExpression(ConditionalExpressionSyntax syntax) {
+        BoundExpression condition = bindExpression(syntax.getCondition());
+        if (condition.getType() != BuiltinTypes.BOOL) {
+            diagnostics.reportInvalidConditionType(syntax.getCondition().getLocation(), condition.getType());
+            return bindErrorExpression(syntax);
+        }
+
+        BoundExpression thenExpression = bindExpression(syntax.getThenExpression());
+        BoundExpression elseExpression = bindExpression(syntax.getElseExpression());
+
+        if (thenExpression.getType() != elseExpression.getType()) {
+            diagnostics.reportMismatchingTypes(syntax.getElseExpression().getLocation(), thenExpression.getType(), elseExpression.getType());
+            return bindErrorExpression(syntax);
+        }
+
+        return new BoundConditionalExpression(syntax, condition, thenExpression, elseExpression);
+    }
+
+    private BoundExpression bindUnaryExpression(UnaryExpressionSyntax syntax) {
+        BoundExpression operand = bindExpression(syntax.getOperand());
+
+        TypeSymbol operandType = operand.getType();
+        if (operandType == BuiltinTypes.ERROR) {
+            diagnostics.reportTodoFeature(syntax.getLocation(), "Unary operator on error expression");
+            return bindErrorExpression(syntax);
+        }
+
+        if (operandType.isUnaryOperatorDefined(syntax.getOperatorToken().getText())) {
+            TypeSymbol type = operandType.getUnaryOperatorType(syntax.getOperatorToken().getText());
+            return new BoundUnaryExpression(syntax, syntax.getOperatorToken().getText(), operand, type);
+        }
+
+        diagnostics.reportUndefinedUnaryOperator(syntax.getOperatorToken().getLocation(), syntax.getOperatorToken().getText(), operandType);
+        return bindErrorExpression(syntax);
+    }
+
+    private BoundExpression bindBinaryExpression(BinaryExpressionSyntax syntax) {
+        BoundExpression left = bindExpression(syntax.getLeft());
+        BoundExpression right = bindExpression(syntax.getRight());
+
+        TypeSymbol leftType = left.getType();
+        TypeSymbol rightType = right.getType();
+
+        if (leftType == BuiltinTypes.ERROR || rightType == BuiltinTypes.ERROR) {
+            diagnostics.reportTodoFeature(syntax.getLocation(), "Binary operator on error expression");
+            return bindErrorExpression(syntax);
+        }
+
+        if (leftType.isBinaryOperatorDefined(syntax.getOperatorToken().getText(), rightType)) {
+            TypeSymbol type = leftType.getBinaryOperatorType(syntax.getOperatorToken().getText(), rightType);
+            return new BoundBinaryExpression(syntax, left, syntax.getOperatorToken().getText(), right, type);
+        }
+
+        diagnostics.reportUndefinedBinaryOperator(syntax.getOperatorToken().getLocation(), syntax.getOperatorToken().getText(), leftType, rightType);
+        return bindErrorExpression(syntax);
+    }
+
+    private BoundExpression bindLiteralExpression(LiteralExpressionSyntax syntax) {
+        return switch (syntax.getValueToken().getKind()) {
+            case NUMBER_TOKEN, FLOATING_POINT_TOKEN -> bindNumberLiteralExpression(syntax);
+            case TRUE_KEYWORD, FALSE_KEYWORD -> bindBooleanLiteralExpression(syntax);
+            case STRING_TOKEN -> bindStringLiteralExpression(syntax);
+
+            default -> {
+                diagnostics.reportTodoFeature(syntax.getLocation(), "Literal expression");
+                yield bindErrorExpression(syntax);
+            }
+        };
+    }
+
+    private BoundExpression bindStringLiteralExpression(LiteralExpressionSyntax syntax) {
+        TypeSymbol type = BuiltinTypes.STRING;
+        Object value = syntax.getValueToken().getValue();
+        return new BoundLiteralExpression(syntax, value, type);
+    }
+
+    private BoundExpression bindBooleanLiteralExpression(LiteralExpressionSyntax syntax) {
+        TypeSymbol type = BuiltinTypes.BOOL;
+        Object value = syntax.getValueToken().getKind() == SyntaxKind.TRUE_KEYWORD;
+        return new BoundLiteralExpression(syntax, value, type);
+    }
+
+    private BoundExpression bindNumberLiteralExpression(LiteralExpressionSyntax syntax) {
+        if (syntax.getValueToken().getValue() instanceof Integer) {
+            TypeSymbol type = BuiltinTypes.INT;
+            Object value = syntax.getValueToken().getValue();
+            return new BoundLiteralExpression(syntax, value, type);
+        } else if (syntax.getValueToken().getValue() instanceof Double) {
+            TypeSymbol type = BuiltinTypes.DOUBLE;
+            Object value = syntax.getValueToken().getValue();
+            return new BoundLiteralExpression(syntax, value, type);
+        }
+        diagnostics.reportInvalidNumberLiteral(syntax.getValueToken().getLocation(), syntax.getValueToken().getText());
+        return bindErrorExpression(syntax);
+    }
+
+    private BoundExpression bindErrorExpression(SyntaxNode syntax) {
+        return new BoundErrorExpression(syntax);
+    }
+
+    private BoundExpression bindParenthesizedExpression(ParenthesizedExpressionSyntax syntax) {
+        return bindExpression(syntax.getExpression());
+    }
+
+    private BoundStatement bindErrorStatement(SyntaxNode syntax) {
+        return new BoundExpressionStatement(syntax, bindErrorExpression(syntax));
+    }
+
+    private TypeSymbol bindTypeClause(TypeClauseSyntax typeClause) {
+        String name = typeClause.getTypeName().getText();
+        if (programScope.isTypeDeclared(name)) {
+            return programScope.getType(name);
+        }
+        return null;
+    }
+}

@@ -1,0 +1,25 @@
+import "std:math";
+
+type Vec2 {
+    prv var x: double;
+    prv var y: double;
+
+    constructor(x: double, y: double) {
+        this.x = x;
+        this.y = y;
+    }
+
+    pub fnc getX(): double {
+        return this.x;
+    }
+
+    pub fnc getY(): double {
+        return this.y;
+    }
+
+    binop +(other: Vec2): Vec2 {
+        return new Vec2(this.x + other.x, this.y + other.y);
+    }
+}
+
+export Vec2;

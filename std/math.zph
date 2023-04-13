@@ -1,0 +1,5 @@
+type Math {
+    
+}
+
+export Math;

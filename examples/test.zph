@@ -1,0 +1,15 @@
+import "std:math/constants";
+import "std:math/vec2";
+
+type Program {
+    pub shared fnc main(argc: int, argv: str): int {
+        const veca: Vec2 = new Vec2(1.0, 2.0);
+        const vecb: Vec2 = new Vec2(3.0, 4.0);
+
+
+
+        return int.fromDouble((veca + vecb).getY());
+    }
+}
+
+export Program;
