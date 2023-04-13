@@ -196,6 +196,10 @@ public final class Evaluator {
             throw new RuntimeException("Array index must be an integer");
         }
 
+        if ((Integer) index >= ((List<?>) array).size()) {
+            throw new RuntimeException("Array index out of bounds");
+        }
+
         return ((List<?>) array).get((Integer) index);
     }
 
@@ -307,9 +311,31 @@ public final class Evaluator {
             Object value = evaluateExpression(expression.getExpression());
             assign(variableExpression.getVariable(), value);
             return value;
-        } else {
-            throw new RuntimeException("Cannot assign to expression of type " + target.getClass().getSimpleName());
         }
+
+        if (target instanceof BoundArrayAccessExpression arrayAccessExpression) {
+            Object array = evaluateExpression(arrayAccessExpression.getTarget());
+            Object index = evaluateExpression(arrayAccessExpression.getIndex());
+            Object value = evaluateExpression(expression.getExpression());
+
+            if (!(array instanceof List)) {
+                throw new RuntimeException("Cannot access array element of non-array type");
+            }
+
+            if (!(index instanceof Integer)) {
+                throw new RuntimeException("Array index must be an integer");
+            }
+
+            // check index out of bounds
+            if ((Integer) index >= ((List<?>) array).size()) {
+                throw new RuntimeException("Array index out of bounds");
+            }
+
+            ((List<Object>) array).set((Integer) index, value);
+            return value;
+        }
+
+        throw new RuntimeException("Cannot assign to expression of type " + target.getClass().getSimpleName());
     }
 
     private Object evaluateVariableExpression(BoundVariableExpression expression) {
@@ -381,12 +407,12 @@ public final class Evaluator {
         }
 
         if (callee instanceof BoundLiteralExpression literalExpression) {
-            if(BuiltinTypes.isValidLiteralType(literalExpression.getType())) {
+            if (BuiltinTypes.isValidLiteralType(literalExpression.getType())) {
                 return evaluateBuiltinFunctionCall(callee, literalExpression.getType(), expression.getFunction(), expression.getArguments());
             }
         }
 
-        if(BuiltinTypes.isValidLiteralType(calleeValue.getClass())){
+        if (BuiltinTypes.isValidLiteralType(calleeValue.getClass())) {
             return evaluateBuiltinFunctionCall(callee, BuiltinTypes.getLiteralType(calleeValue.getClass()), expression.getFunction(), expression.getArguments());
         }
 
@@ -501,8 +527,6 @@ public final class Evaluator {
             throw new RuntimeException("Cannot access member of non-instance");
         }
 
-        // TODO: check if function or field can be accessed
-
         if (expression.getMember() instanceof FieldSymbol field) {
             // check if current type is target type
             return instance.getFieldValue(field);
@@ -523,7 +547,6 @@ public final class Evaluator {
     private Object evaluateInstanceCreationExpression(BoundInstanceCreationExpression expression) {
         BoundTypeScope typeScope = boundProgram.getProgramScope().getTypeScope(expression.getType());
         // create instance variables
-        // TODO: maybe remove?
         locals.push(new VariableTable("instance"));
 
         for (FieldSymbol field : typeScope.getDeclaredFieldsAndFunctions().stream().filter(s -> s instanceof FieldSymbol).map(s -> (FieldSymbol) s).filter(f -> !f.isShared()).toList()) {

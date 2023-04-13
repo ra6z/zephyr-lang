@@ -736,83 +736,81 @@ public class Binder {
 
         if (target instanceof BoundVariableExpression variable) {
             VariableSymbol variableSymbol = variable.getVariable();
-            if (variableSymbol.isReadonly()) {
-                diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), variableSymbol.getName());
-                return bindErrorExpression(syntax);
-            }
-
-            if (!variableSymbol.getType().equals(expression.getType())) {
-                diagnostics.reportCannotConvert(syntax.getRight().getLocation(), expression.getType(), variableSymbol.getType());
-                return bindErrorExpression(syntax);
-            }
-
-            if (syntax.getOperatorToken().getKind() != SyntaxKind.EQUALS_TOKEN) {
-                diagnostics.reportTodoFeature(syntax.getOperatorToken().getLocation(), "Compound assignment");
-                return bindErrorExpression(syntax);
-            }
-
-            return new BoundAssignmentExpression(syntax, variable, expression);
+            return getBoundExpression(syntax, variable, expression, variableSymbol);
         } else if (target instanceof BoundFieldAccessExpression field) {
             FieldSymbol fieldSymbol = field.getField();
-            if (fieldSymbol.isReadonly()) {
-                diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), fieldSymbol.getName());
-                return bindErrorExpression(syntax);
-            }
-
-            if (!fieldSymbol.getType().equals(expression.getType())) {
-                diagnostics.reportCannotConvert(syntax.getRight().getLocation(), expression.getType(), fieldSymbol.getType());
-                return bindErrorExpression(syntax);
-            }
-
-            if (syntax.getOperatorToken().getKind() != SyntaxKind.EQUALS_TOKEN) {
-                diagnostics.reportTodoFeature(syntax.getOperatorToken().getLocation(), "Compound assignment");
-                return bindErrorExpression(syntax);
-            }
-
-            return new BoundAssignmentExpression(syntax, field, expression);
+            return getBoundExpression(syntax, field, expression, fieldSymbol);
         } else if (target instanceof BoundMemberAccessExpression memberAccessExpression) {
             if (memberAccessExpression.getMember() instanceof VariableSymbol variable) {
-                if (variable.isReadonly()) {
-                    diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), variable.getName());
-                    return bindErrorExpression(syntax);
-                }
-
-                if (!variable.getType().equals(expression.getType())) {
-                    diagnostics.reportCannotConvert(syntax.getRight().getLocation(), expression.getType(), variable.getType());
-                    return bindErrorExpression(syntax);
-                }
-
-                if (syntax.getOperatorToken().getKind() != SyntaxKind.EQUALS_TOKEN) {
-                    diagnostics.reportTodoFeature(syntax.getOperatorToken().getLocation(), "Compound assignment");
-                    return bindErrorExpression(syntax);
-                }
-
-                return new BoundAssignmentExpression(syntax, memberAccessExpression, expression);
+                return getBoundExpression(syntax, memberAccessExpression, expression, variable);
             } else if (memberAccessExpression.getMember() instanceof FieldSymbol field) {
-                if (field.isReadonly()) {
-                    diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), field.getName());
-                    return bindErrorExpression(syntax);
-                }
-
-                if (!field.getType().equals(expression.getType())) {
-                    diagnostics.reportCannotConvert(syntax.getRight().getLocation(), expression.getType(), field.getType());
-                    return bindErrorExpression(syntax);
-                }
-
-                if (syntax.getOperatorToken().getKind() != SyntaxKind.EQUALS_TOKEN) {
-                    diagnostics.reportTodoFeature(syntax.getOperatorToken().getLocation(), "Compound assignment");
-                    return bindErrorExpression(syntax);
-                }
-
-                return new BoundAssignmentExpression(syntax, memberAccessExpression, expression);
+                return getBoundExpression(syntax, memberAccessExpression, expression, field);
             } else {
                 diagnostics.reportInvalidAssignmentTarget(syntax.getLeft().getLocation(), target.getSyntax());
                 return bindErrorExpression(syntax);
             }
-        } else {
-            diagnostics.reportInvalidAssignmentTarget(syntax.getLeft().getLocation(), target.getSyntax());
+        } else if (target instanceof BoundArrayAccessExpression arrayAccessExpression) {
+            BoundExpression array = arrayAccessExpression.getTarget();
+            BoundExpression index = arrayAccessExpression.getIndex();
+
+            if (!(array.getType() instanceof ArrayTypeSymbol arrayType)) {
+                diagnostics.reportInvalidAssignmentTarget(syntax.getLeft().getLocation(), target.getSyntax());
+                return bindErrorExpression(syntax);
+            }
+
+            if (!index.getType().equals(BuiltinTypes.INT)) {
+                diagnostics.reportCannotConvert(index.getSyntax().getLocation(), index.getType(), BuiltinTypes.INT);
+                return bindErrorExpression(syntax);
+            }
+
+            if (!expression.getType().equals(arrayType.getElementType())) {
+                diagnostics.reportCannotConvert(expression.getSyntax().getLocation(), expression.getType(), arrayType.getElementType());
+                return bindErrorExpression(syntax);
+            }
+
+            return new BoundAssignmentExpression(syntax, arrayAccessExpression, expression);
+        }
+
+        diagnostics.reportInvalidAssignmentTarget(syntax.getLeft().getLocation(), target.getSyntax());
+        return bindErrorExpression(syntax);
+    }
+
+    private BoundExpression getBoundExpression(AssignmentExpressionSyntax syntax, BoundExpression target, BoundExpression value, FieldSymbol field) {
+        if (field.isReadonly()) {
+            diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), field.getName());
             return bindErrorExpression(syntax);
         }
+
+        if (!field.getType().equals(value.getType())) {
+            diagnostics.reportCannotConvert(syntax.getRight().getLocation(), value.getType(), field.getType());
+            return bindErrorExpression(syntax);
+        }
+
+        if (syntax.getOperatorToken().getKind() != SyntaxKind.EQUALS_TOKEN) {
+            diagnostics.reportTodoFeature(syntax.getOperatorToken().getLocation(), "Compound assignment");
+            return bindErrorExpression(syntax);
+        }
+
+        return new BoundAssignmentExpression(syntax, target, value);
+    }
+
+    private BoundExpression getBoundExpression(AssignmentExpressionSyntax syntax, BoundExpression target, BoundExpression value, VariableSymbol variableSymbol) {
+        if (variableSymbol.isReadonly()) {
+            diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), variableSymbol.getName());
+            return bindErrorExpression(syntax);
+        }
+
+        if (!variableSymbol.getType().equals(value.getType())) {
+            diagnostics.reportCannotConvert(syntax.getRight().getLocation(), value.getType(), variableSymbol.getType());
+            return bindErrorExpression(syntax);
+        }
+
+        if (syntax.getOperatorToken().getKind() != SyntaxKind.EQUALS_TOKEN) {
+            diagnostics.reportTodoFeature(syntax.getOperatorToken().getLocation(), "Compound assignment");
+            return bindErrorExpression(syntax);
+        }
+
+        return new BoundAssignmentExpression(syntax, target, value);
     }
 
     private BoundExpression bindArrayAccessExpression(ArrayAccessExpressionSyntax syntax) {
@@ -822,7 +820,7 @@ public class Binder {
             return target;
         }
 
-        if(!(target.getType() instanceof ArrayTypeSymbol)) {
+        if (!(target.getType() instanceof ArrayTypeSymbol)) {
             diagnostics.reportCannotIndex(syntax.getTarget().getLocation(), target.getType());
             return bindErrorExpression(syntax);
         }
