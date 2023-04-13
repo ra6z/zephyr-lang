@@ -38,7 +38,7 @@ See: `pub shared fnc main(argc: int, argv: str[]): int`
 import "std:console";
 
 type Program {
-  pub shared fn main(argc: int, argv: string[]): int {
+  pub shared fn main(argc: int, argv: str[]): int {
     Console.printString("Hello, World!");
     return 0;
   }
