@@ -1,4 +1,4 @@
-package io.ra6.zephyr.evaluating;
+package io.ra6.zephyr.runtime;
 
 import io.ra6.zephyr.builtin.BuiltinTypes;
 import io.ra6.zephyr.builtin.InternalBinaryOperator;
@@ -9,14 +9,15 @@ import io.ra6.zephyr.codeanalysis.binding.expressions.*;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
 import io.ra6.zephyr.codeanalysis.binding.statements.*;
 import io.ra6.zephyr.codeanalysis.symbols.*;
-import io.ra6.zephyr.runtime.TypeInstance;
-import io.ra6.zephyr.runtime.VariableTable;
-import io.ra6.zephyr.runtime.VariableTableStack;
+import io.ra6.zephyr.diagnostic.DiagnosticBag;
+import io.ra6.zephyr.writer.DiagnosticWriter;
+import lombok.experimental.ExtensionMethod;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+@ExtensionMethod({DiagnosticWriter.class})
 public final class Evaluator {
     private final BoundProgram boundProgram;
     private final String[] args;
@@ -31,6 +32,14 @@ public final class Evaluator {
 
     public static EvaluationResult evaluate(BoundProgram boundProgram, String[] args) {
         Evaluator evaluator = new Evaluator(boundProgram, args);
+
+        if (boundProgram.getDiagnostics().hasErrors()) {
+            System.out.println("Program has errors. Cannot evaluate.");
+
+            System.out.printDiagnostics(boundProgram.getDiagnostics());
+
+            return new EvaluationResult(-1);
+        }
 
         if (boundProgram.getExports().isEmpty()) {
             System.out.println("No exports found. Need at least one export to run the program.");

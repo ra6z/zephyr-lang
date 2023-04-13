@@ -91,7 +91,7 @@ public class Binder {
             throw new RuntimeException("Unexpected scope kind: " + scope.getKind());
         }
 
-        return new BoundProgram(programScope);
+        return new BoundProgram(programScope, diagnostics);
     }
 
 

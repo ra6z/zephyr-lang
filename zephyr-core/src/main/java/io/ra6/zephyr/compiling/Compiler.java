@@ -3,19 +3,16 @@ package io.ra6.zephyr.compiling;
 import io.ra6.zephyr.codeanalysis.binding.Binder;
 import io.ra6.zephyr.codeanalysis.binding.BoundProgram;
 import io.ra6.zephyr.codeanalysis.syntax.SyntaxTree;
-import io.ra6.zephyr.evaluating.EvaluationResult;
-import io.ra6.zephyr.evaluating.Evaluator;
+import io.ra6.zephyr.runtime.EvaluationResult;
+import io.ra6.zephyr.runtime.Evaluator;
 import io.ra6.zephyr.library.ZephyrLibrary;
 import io.ra6.zephyr.library.ZephyrLibraryMetadata;
 import io.ra6.zephyr.sourcefile.SourceText;
-import io.ra6.zephyr.writer.BoundNodeWriter;
 import io.ra6.zephyr.writer.DiagnosticWriter;
 import io.ra6.zephyr.writer.SyntaxWriter;
 import lombok.experimental.ExtensionMethod;
 
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 
 @ExtensionMethod({DiagnosticWriter.class, SyntaxWriter.class})
 public class Compiler {
@@ -36,8 +33,6 @@ public class Compiler {
             if (CompilerFlags.isFlagSet(flags, CompilerFlags.PRINT_TREE)) System.out.printTree(mainTree);
             Binder binder = new Binder(mainTree, standardLibrary);
             BoundProgram boundProgram = binder.bindProgram();
-
-            System.out.printDiagnostics(binder.getDiagnostics());
 
             return Evaluator.evaluate(boundProgram, args);
         } catch (IOException e) {
