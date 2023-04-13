@@ -1015,17 +1015,6 @@ public class Binder {
                 return target;
             }
 
-            /*
-            if (member.getMember() instanceof FunctionSymbol function) {
-                if (!checkArguments(function.getParameters(), boundArguments, syntax.getArguments())) {
-                    diagnostics.reportArgumentMismatch(syntax.getLocation(), function, boundArguments);
-                    return bindErrorExpression(syntax);
-                }
-
-                return new BoundMethodCallExpression(syntax, target, function, boundArguments);
-            }
-             */
-
             if (target instanceof BoundVariableExpression variable) {
                 // instance access
                 FunctionSymbol function = variable.getVariable().getType().getFunction(member.getMember().getName(), false);
@@ -1217,7 +1206,6 @@ public class Binder {
         TypeSymbol elementType = programScope.getType(elementName);
 
         int rank = typeClause.getRank();
-
         for (int i = 0; i < rank; i++) {
             elementType = new ArrayTypeSymbol(elementType);
         }

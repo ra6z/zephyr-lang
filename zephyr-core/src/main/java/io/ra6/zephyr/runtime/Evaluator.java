@@ -9,7 +9,6 @@ import io.ra6.zephyr.codeanalysis.binding.expressions.*;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
 import io.ra6.zephyr.codeanalysis.binding.statements.*;
 import io.ra6.zephyr.codeanalysis.symbols.*;
-import io.ra6.zephyr.diagnostic.DiagnosticBag;
 import io.ra6.zephyr.writer.DiagnosticWriter;
 import lombok.experimental.ExtensionMethod;
 
@@ -34,10 +33,7 @@ public final class Evaluator {
         Evaluator evaluator = new Evaluator(boundProgram, args);
 
         if (boundProgram.getDiagnostics().hasErrors()) {
-            System.out.println("Program has errors. Cannot evaluate.");
-
             System.out.printDiagnostics(boundProgram.getDiagnostics());
-
             return new EvaluationResult(-1);
         }
 

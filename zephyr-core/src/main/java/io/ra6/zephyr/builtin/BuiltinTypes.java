@@ -19,6 +19,8 @@ public class BuiltinTypes {
     private static final HashMap<Class<?>, TypeSymbol> literalTypeMapping = new HashMap<>();
     //private static final HashMap<TypeSymbol, TypeSymbol> typeAliases = new HashMap<>();
 
+
+
     public static void register(BuiltinType type) {
         types.put(type.getTypeSymbol(), type);
     }
