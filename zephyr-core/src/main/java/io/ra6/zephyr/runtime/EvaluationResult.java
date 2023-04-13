@@ -1,4 +1,4 @@
-package io.ra6.zephyr.evaluating;
+package io.ra6.zephyr.runtime;
 
 public class EvaluationResult {
     private final int exitCode;

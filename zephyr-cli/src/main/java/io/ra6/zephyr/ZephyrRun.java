@@ -2,7 +2,7 @@ package io.ra6.zephyr;
 
 import io.ra6.zephyr.compiling.Compiler;
 import io.ra6.zephyr.compiling.CompilerFlags;
-import io.ra6.zephyr.evaluating.EvaluationResult;
+import io.ra6.zephyr.runtime.EvaluationResult;
 import picocli.CommandLine;
 
 import java.util.concurrent.Callable;
