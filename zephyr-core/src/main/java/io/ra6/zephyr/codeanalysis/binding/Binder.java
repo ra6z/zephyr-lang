@@ -2,14 +2,14 @@ package io.ra6.zephyr.codeanalysis.binding;
 
 import io.ra6.zephyr.Triple;
 import io.ra6.zephyr.Tuple;
+import io.ra6.zephyr.builtin.BuiltinTypes;
+import io.ra6.zephyr.builtin.types.BuiltinType;
 import io.ra6.zephyr.codeanalysis.binding.expressions.*;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundProgramScope;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundScope;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundScopeKind;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
 import io.ra6.zephyr.codeanalysis.binding.statements.*;
-import io.ra6.zephyr.builtin.BuiltinTypes;
-import io.ra6.zephyr.builtin.types.BuiltinType;
 import io.ra6.zephyr.codeanalysis.lowering.Lowerer;
 import io.ra6.zephyr.codeanalysis.symbols.*;
 import io.ra6.zephyr.codeanalysis.syntax.*;
@@ -245,7 +245,7 @@ public class Binder {
             return;
         }
 
-        if (initializer != null && initializer.getType() != field.getType()) {
+        if (initializer != null && !initializer.getType().equals(field.getType())) {
             diagnostics.reportCannotConvert(syntax.getInitializer().getLocation(), initializer.getType(), field.getType());
             return;
         }
@@ -366,7 +366,7 @@ public class Binder {
     private BoundStatement bindWhileStatement(WhileStatementSyntax syntax) {
         BoundExpression condition = bindExpression(syntax.getCondition());
 
-        if (condition.getType() != BuiltinTypes.BOOL) {
+        if (!condition.getType().equals(BuiltinTypes.BOOL)) {
             diagnostics.reportCannotConvert(syntax.getCondition().getLocation(), condition.getType(), BuiltinTypes.BOOL);
             return bindErrorStatement(syntax);
         }
@@ -392,7 +392,7 @@ public class Binder {
     private BoundStatement bindIfStatement(IfStatementSyntax syntax) {
         BoundExpression condition = bindExpression(syntax.getCondition());
 
-        if (condition.getType() != BuiltinTypes.BOOL) {
+        if (!condition.getType().equals(BuiltinTypes.BOOL)) {
             diagnostics.reportCannotConvert(syntax.getCondition().getLocation(), condition.getType(), BuiltinTypes.BOOL);
             return bindErrorStatement(syntax);
         }
@@ -438,17 +438,17 @@ public class Binder {
             return bindErrorStatement(syntax);
         }
 
-        if (currentFunction.getType() == BuiltinTypes.VOID && expression != null) {
+        if (currentFunction.getType().equals(BuiltinTypes.VOID) && expression != null) {
             diagnostics.cannotReturnExpressionOnVoidFunction(syntax.getLocation());
             return bindErrorStatement(syntax);
         }
 
-        if (currentFunction.getType() != BuiltinTypes.VOID && expression == null) {
+        if (!currentFunction.getType().equals(BuiltinTypes.VOID) && expression == null) {
             diagnostics.cannotReturnVoidOnNonVoidFunction(syntax.getLocation());
             return bindErrorStatement(syntax);
         }
 
-        if (expression != null && expression.getType() != currentFunction.getType()) {
+        if (expression != null && !expression.getType().equals(currentFunction.getType())) {
             diagnostics.reportInvalidReturnExpression(syntax.getExpression().getLocation(), expression.getType(), currentFunction.getType());
             return bindErrorStatement(syntax);
         }
@@ -486,7 +486,7 @@ public class Binder {
             return bindErrorStatement(syntax);
         }
 
-        if (initializer != null && initializer.getType() != variableType) {
+        if (initializer != null && !initializer.getType().equals(variableType)) {
             diagnostics.reportCannotConvert(syntax.getInitializer().getLocation(), initializer.getType(), variableType);
             return bindErrorStatement(syntax);
         }
@@ -694,6 +694,7 @@ public class Binder {
             case CONDITIONAL_EXPRESSION -> bindConditionalExpression((ConditionalExpressionSyntax) syntax);
             case INSTANCE_CREATION_EXPRESSION ->
                     bindInstanceCreationExpression((InstanceCreationExpressionSyntax) syntax);
+            case ARRAY_LITERAL_EXPRESSION -> bindArrayLiteralExpression((ArrayLiteralExpressionSyntax) syntax);
             case MEMBER_ACCESS_EXPRESSION -> bindMemberAccessExpression((MemberAccessExpressionSyntax) syntax);
             case NAME_EXPRESSION -> bindNameExpression((NameExpressionSyntax) syntax);
             case ASSIGNMENT_EXPRESSION -> bindAssignmentExpression((AssignmentExpressionSyntax) syntax);
@@ -702,6 +703,31 @@ public class Binder {
 
             default -> bindErrorExpression(syntax);
         };
+    }
+
+    private BoundExpression bindArrayLiteralExpression(ArrayLiteralExpressionSyntax syntax) {
+        List<BoundExpression> elements = new ArrayList<>();
+
+        for (ExpressionSyntax element : syntax.getElements()) {
+            BoundExpression boundElement = bindExpression(element);
+            elements.add(boundElement);
+        }
+
+        if (elements.isEmpty()) {
+            diagnostics.reportTodoFeature(syntax.getLocation(), "Empty array literal");
+            return bindErrorExpression(syntax);
+        }
+
+        ArrayTypeSymbol type = new ArrayTypeSymbol(elements.get(0).getType());
+
+        for (BoundExpression element : elements) {
+            if (!element.getType().equals(type.getElementType())) {
+                diagnostics.reportCannotConvert(element.getSyntax().getLocation(), element.getType(), type.getElementType());
+                return bindErrorExpression(syntax);
+            }
+        }
+
+        return new BoundArrayLiteralExpression(syntax, type, elements);
     }
 
     private BoundExpression bindAssignmentExpression(AssignmentExpressionSyntax syntax) {
@@ -715,7 +741,7 @@ public class Binder {
                 return bindErrorExpression(syntax);
             }
 
-            if (variableSymbol.getType() != expression.getType()) {
+            if (!variableSymbol.getType().equals(expression.getType())) {
                 diagnostics.reportCannotConvert(syntax.getRight().getLocation(), expression.getType(), variableSymbol.getType());
                 return bindErrorExpression(syntax);
             }
@@ -733,7 +759,7 @@ public class Binder {
                 return bindErrorExpression(syntax);
             }
 
-            if (fieldSymbol.getType() != expression.getType()) {
+            if (!fieldSymbol.getType().equals(expression.getType())) {
                 diagnostics.reportCannotConvert(syntax.getRight().getLocation(), expression.getType(), fieldSymbol.getType());
                 return bindErrorExpression(syntax);
             }
@@ -751,7 +777,7 @@ public class Binder {
                     return bindErrorExpression(syntax);
                 }
 
-                if (variable.getType() != expression.getType()) {
+                if (!variable.getType().equals(expression.getType())) {
                     diagnostics.reportCannotConvert(syntax.getRight().getLocation(), expression.getType(), variable.getType());
                     return bindErrorExpression(syntax);
                 }
@@ -768,7 +794,7 @@ public class Binder {
                     return bindErrorExpression(syntax);
                 }
 
-                if (field.getType() != expression.getType()) {
+                if (!field.getType().equals(expression.getType())) {
                     diagnostics.reportCannotConvert(syntax.getRight().getLocation(), expression.getType(), field.getType());
                     return bindErrorExpression(syntax);
                 }
@@ -790,8 +816,25 @@ public class Binder {
     }
 
     private BoundExpression bindArrayAccessExpression(ArrayAccessExpressionSyntax syntax) {
-        diagnostics.reportTodoFeature(syntax.getLocation(), "Array access");
-        return bindErrorExpression(syntax);
+        BoundExpression target = bindExpression(syntax.getTarget());
+
+        if (target instanceof BoundErrorExpression) {
+            return target;
+        }
+
+        if(!(target.getType() instanceof ArrayTypeSymbol)) {
+            diagnostics.reportCannotIndex(syntax.getTarget().getLocation(), target.getType());
+            return bindErrorExpression(syntax);
+        }
+
+        BoundExpression index = bindExpression(syntax.getIndex());
+
+        if (!index.getType().equals(BuiltinTypes.INT)) {
+            diagnostics.reportCannotConvert(syntax.getIndex().getLocation(), index.getType(), BuiltinTypes.INT);
+            return bindErrorExpression(syntax);
+        }
+
+        return new BoundArrayAccessExpression(syntax, target, index);
     }
 
     private BoundExpression bindMemberAccessExpression(MemberAccessExpressionSyntax syntax) {
@@ -947,7 +990,7 @@ public class Binder {
             BoundExpression argument = boundArguments.get(i);
             ExpressionSyntax argumentSyntax = argumentsSyntaxes.get(i);
 
-            if (parameter.getType() != argument.getType()) {
+            if (!parameter.getType().equals(argument.getType())) {
                 diagnostics.reportMismatchingTypes(argumentSyntax.getLocation(), parameter.getType(), argument.getType());
                 return false;
             }
@@ -1047,7 +1090,7 @@ public class Binder {
 
     private BoundExpression bindConditionalExpression(ConditionalExpressionSyntax syntax) {
         BoundExpression condition = bindExpression(syntax.getCondition());
-        if (condition.getType() != BuiltinTypes.BOOL) {
+        if (!condition.getType().equals(BuiltinTypes.BOOL)) {
             diagnostics.reportInvalidConditionType(syntax.getCondition().getLocation(), condition.getType());
             return bindErrorExpression(syntax);
         }
@@ -1055,7 +1098,7 @@ public class Binder {
         BoundExpression thenExpression = bindExpression(syntax.getThenExpression());
         BoundExpression elseExpression = bindExpression(syntax.getElseExpression());
 
-        if (thenExpression.getType() != elseExpression.getType()) {
+        if (!thenExpression.getType().equals(elseExpression.getType())) {
             diagnostics.reportMismatchingTypes(syntax.getElseExpression().getLocation(), thenExpression.getType(), elseExpression.getType());
             return bindErrorExpression(syntax);
         }
@@ -1154,10 +1197,33 @@ public class Binder {
     }
 
     private TypeSymbol bindTypeClause(TypeClauseSyntax typeClause) {
-        String name = typeClause.getTypeName().getText();
-        if (programScope.isTypeDeclared(name)) {
-            return programScope.getType(name);
+        String typeName = typeClause.getTypeName().getText();
+        if (typeClause instanceof ArrayTypeClauseSyntax) {
+            return bindArrayTypeClause((ArrayTypeClauseSyntax) typeClause);
         }
-        return null;
+
+        if (!programScope.isTypeDeclared(typeName)) {
+            return null;
+        }
+
+        return programScope.getType(typeName);
+    }
+
+    private TypeSymbol bindArrayTypeClause(ArrayTypeClauseSyntax typeClause) {
+        String elementName = typeClause.getTypeName().getText();
+
+        if (!programScope.isTypeDeclared(elementName)) {
+            return null;
+        }
+
+        TypeSymbol elementType = programScope.getType(elementName);
+
+        int rank = typeClause.getRank();
+
+        for (int i = 0; i < rank; i++) {
+            elementType = new ArrayTypeSymbol(elementType);
+        }
+
+        return elementType;
     }
 }

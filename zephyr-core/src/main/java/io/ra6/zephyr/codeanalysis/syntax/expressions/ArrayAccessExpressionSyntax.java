@@ -7,7 +7,7 @@ import java.util.List;
 
 public class ArrayAccessExpressionSyntax extends ExpressionSyntax {
     @Getter
-    private final ExpressionSyntax memberExpression;
+    private final ExpressionSyntax target;
     @Getter
     private final SyntaxToken leftBracketToken;
     @Getter
@@ -15,9 +15,9 @@ public class ArrayAccessExpressionSyntax extends ExpressionSyntax {
     @Getter
     private final SyntaxToken rightBracketToken;
 
-    public ArrayAccessExpressionSyntax(SyntaxTree syntaxTree, ExpressionSyntax memberExpression, SyntaxToken leftBracketToken, ExpressionSyntax index, SyntaxToken rightBracketToken) {
+    public ArrayAccessExpressionSyntax(SyntaxTree syntaxTree, ExpressionSyntax target, SyntaxToken leftBracketToken, ExpressionSyntax index, SyntaxToken rightBracketToken) {
         super(syntaxTree);
-        this.memberExpression = memberExpression;
+        this.target = target;
         this.leftBracketToken = leftBracketToken;
         this.index = index;
         this.rightBracketToken = rightBracketToken;
@@ -30,6 +30,6 @@ public class ArrayAccessExpressionSyntax extends ExpressionSyntax {
 
     @Override
     public List<SyntaxNode> getChildren() {
-        return List.of(memberExpression, leftBracketToken, index, rightBracketToken);
+        return List.of(target, leftBracketToken, index, rightBracketToken);
     }
 }

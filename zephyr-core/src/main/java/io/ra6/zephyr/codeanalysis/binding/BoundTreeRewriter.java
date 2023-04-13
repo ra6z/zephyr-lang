@@ -1,7 +1,6 @@
 package io.ra6.zephyr.codeanalysis.binding;
 
 import io.ra6.zephyr.codeanalysis.binding.expressions.*;
-import io.ra6.zephyr.codeanalysis.binding.statements.BoundExpressionStatement;
 import io.ra6.zephyr.codeanalysis.binding.statements.*;
 
 import java.util.ArrayList;
@@ -117,7 +116,7 @@ public abstract class BoundTreeRewriter {
     }
 
     private BoundExpression rewriteExpression(BoundExpression node) {
-        return switch (node.getKind()){
+        return switch (node.getKind()) {
             case ERROR_EXPRESSION -> rewriteErrorExpression((BoundErrorExpression) node);
             case LITERAL_EXPRESSION -> rewriteLiteralExpression((BoundLiteralExpression) node);
             case VARIABLE_EXPRESSION -> rewriteVariableExpression((BoundVariableExpression) node);
@@ -125,11 +124,43 @@ public abstract class BoundTreeRewriter {
             case UNARY_EXPRESSION -> rewriteUnaryExpression((BoundUnaryExpression) node);
             case BINARY_EXPRESSION -> rewriteBinaryExpression((BoundBinaryExpression) node);
             case METHOD_CALL_EXPRESSION -> rewriteMethodCallExpression((BoundMethodCallExpression) node);
-            case INSTANCE_CREATION_EXPRESSION -> rewriteInstanceCreationExpression((BoundInstanceCreationExpression) node);
+            case INSTANCE_CREATION_EXPRESSION ->
+                    rewriteInstanceCreationExpression((BoundInstanceCreationExpression) node);
             case MEMBER_ACCESS_EXPRESSION -> rewriteMemberAccessExpression((BoundMemberAccessExpression) node);
             case FIELD_ACCESS_EXPRESSION -> rewriteFieldAccessExpression((BoundFieldAccessExpression) node);
+            case ARRAY_LITERAL_EXPRESSION -> rewriteArrayLiteralExpression((BoundArrayLiteralExpression) node);
+            case ARRAY_ACCESS_EXPRESSION -> rewriteArrayAccessExpression((BoundArrayAccessExpression) node);
             default -> throw new IllegalArgumentException("Cannot rewrite " + node.getKind());
         };
+    }
+
+    private BoundExpression rewriteArrayAccessExpression(BoundArrayAccessExpression node) {
+        return node;
+    }
+
+    private BoundExpression rewriteArrayLiteralExpression(BoundArrayLiteralExpression node) {
+        List<BoundExpression> arguments = null;
+
+        for (int i = 0; i < node.getElements().size(); i++) {
+            BoundExpression oldArgument = node.getElements().get(i);
+            BoundExpression newArgument = rewriteExpression(oldArgument);
+
+            if (newArgument != oldArgument) {
+                if (arguments == null) {
+                    arguments = new ArrayList<>(node.getElements().subList(0, i));
+                }
+
+                arguments.add(newArgument);
+            } else if (arguments != null) {
+                arguments.add(oldArgument);
+            }
+        }
+
+        if (arguments == null) {
+            return node;
+        }
+
+        return node;
     }
 
     private BoundExpression rewriteFieldAccessExpression(BoundFieldAccessExpression node) {

@@ -99,10 +99,11 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
 
 ## TODO
 
-- [ ] Array Types
-  - [ ] Array creation syntax (e.g. `{ 1, 2, 3 }`)
-  - [ ] Array indexing syntax (e.g. `array[0]`)
+- [x] Array Types
+  - [x] Array creation syntax (e.g. `[0, 1, 2, 3]`)
+  - [x] Array indexing syntax (e.g. `array[0]`)
   - [ ] Array slicing syntax (e.g. `array[0..2]`)
+- [ ] Type aliases (e.g. `type MyType = int;`)
 - [ ] Additional syntax
   - [ ] `for` loops
   - [ ] `do while` loops
@@ -119,6 +120,16 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
         - [ ] `///` doc comments
         - [ ] `//!` doc comments
     - [ ] Newlines
+- [ ] Generic types (e.g. `type MyType<T> { ... }`)
+  - [ ] Generic type constraints (e.g. `type MyType<T: int> { ... }`)
+  - [ ] Generic function constraints (e.g. `fn myFunction<T: int>(arg: T) { ... }`)
+- [ ] Interfaces (e.g. `interface MyInterface { ... }`)
+  - [ ] Types that implement interfaces (e.g. `type MyType implements MyInterface { ... }`)
+- [ ] Enums (e.g. `enum MyEnum { ... }`) 
+- [ ] Lambda expressions (e.g. fnc arg(lambda: (arg: int, arg2: int) => int): int { ... })
+- [ ] Asynchronous functions (e.g. `async fnc myFunction() { ... }`)
+  - [ ] `await` keyword (e.g. `await myFunction()`)
+  - [ ] `async` keyword (e.g. `async myFunction()`)
 - [ ] Better diagnostics 
   - [ ] Severity levels (e.g. `error`, `warning`, `info`)
   - [ ] Error codes (e.g. `E0001`)

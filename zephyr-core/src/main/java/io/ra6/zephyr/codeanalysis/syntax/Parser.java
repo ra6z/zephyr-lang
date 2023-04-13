@@ -349,12 +349,24 @@ public final class Parser {
         QualifiedNameSyntax typeName = parseQualifiedName();
 
         if (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
-            SyntaxToken openBracketToken = matchToken(SyntaxKind.OPEN_BRACKET_TOKEN);
-            SyntaxToken closeBracketToken = matchToken(SyntaxKind.CLOSE_BRACKET_TOKEN);
-            return new TypeClauseSyntax(syntaxTree, colonToken, typeName, openBracketToken, closeBracketToken);
+            return parseArrayType(colonToken, typeName);
         }
 
         return new TypeClauseSyntax(syntaxTree, colonToken, typeName);
+    }
+
+    private TypeClauseSyntax parseArrayType(SyntaxToken colonToken, QualifiedNameSyntax elementName) {
+        // parse multiple array
+        List<SyntaxToken> brackets = new ArrayList<>();
+
+        while (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
+            SyntaxToken openBracketToken = matchToken(SyntaxKind.OPEN_BRACKET_TOKEN);
+            SyntaxToken closeBracketToken = matchToken(SyntaxKind.CLOSE_BRACKET_TOKEN);
+            brackets.add(openBracketToken);
+            brackets.add(closeBracketToken);
+        }
+
+        return new ArrayTypeClauseSyntax(syntaxTree, colonToken, elementName, brackets);
     }
 
     private QualifiedNameSyntax parseQualifiedName() {
@@ -598,8 +610,48 @@ public final class Parser {
         return parsePrimaryExpression();
     }
 
+    private SeparatedSyntaxList<ExpressionSyntax> parseArrayElements() {
+        List<SyntaxNode> nodesAndSeparators = new ArrayList<>();
+
+        if (current().getKind() != SyntaxKind.CLOSE_BRACKET_TOKEN) {
+            ExpressionSyntax firstArgument = parseExpression();
+            nodesAndSeparators.add(firstArgument);
+            while (current().getKind() == SyntaxKind.COMMA_TOKEN) {
+                SyntaxToken comma = nextToken();
+                ExpressionSyntax element = parseExpression();
+                nodesAndSeparators.add(comma);
+                nodesAndSeparators.add(element);
+            }
+        }
+
+        return new SeparatedSyntaxList<>(nodesAndSeparators);
+    }
+    /*
+    private ExpressionSyntax parsePrimaryExpression() {
+        ExpressionSyntax expression = parseInternalPrimary();
+
+        // parse identifier
+        if (current().getKind() == SyntaxKind.DOT_TOKEN) {
+            expression = parseMemberAccessExpression(expression);
+        }
+
+        if (current().getKind() == SyntaxKind.OPEN_PARENTHESIS_TOKEN) {
+            SyntaxToken leftParenthesis = nextToken();
+            SeparatedSyntaxList<ExpressionSyntax> arguments = parseArguments();
+            SyntaxToken rightParenthesis = matchToken(SyntaxKind.CLOSE_PARENTHESIS_TOKEN);
+            return new MethodCallExpressionSyntax(syntaxTree, expression, leftParenthesis, arguments, rightParenthesis);
+        }
+
+        if (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
+            SyntaxToken leftBracket = nextToken();
+            ExpressionSyntax index = parseExpression();
+            SyntaxToken rightBracket = matchToken(SyntaxKind.CLOSE_BRACKET_TOKEN);
+            return new ArrayAccessExpressionSyntax(syntaxTree, expression, leftBracket, index, rightBracket);
+        }
+
+        return expression;
+    }
     private ExpressionSyntax parseInternalPrimary() {
-        SyntaxToken current = current();
         // parse parenthesized expression
         if (current().getKind() == SyntaxKind.OPEN_PARENTHESIS_TOKEN) {
             SyntaxToken left = nextToken();
@@ -607,6 +659,7 @@ public final class Parser {
             SyntaxToken right = matchToken(SyntaxKind.CLOSE_PARENTHESIS_TOKEN);
             return new ParenthesizedExpressionSyntax(syntaxTree, left, expression, right);
         }
+
         // parse number literal
         if (current().getKind() == SyntaxKind.NUMBER_TOKEN) {
             SyntaxToken numberToken = nextToken();
@@ -631,17 +684,35 @@ public final class Parser {
             return new LiteralExpressionSyntax(syntaxTree, stringToken);
         }
 
+        // parse array creation
+        if (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
+            SyntaxToken leftBracket = nextToken();
+            SeparatedSyntaxList<ExpressionSyntax> elements = parseArrayElements();
+            SyntaxToken rightBracket = matchToken(SyntaxKind.CLOSE_BRACKET_TOKEN);
+            return new ArrayLiteralExpressionSyntax(syntaxTree, leftBracket, elements, rightBracket);
+        }
+
         SyntaxToken identifier = matchToken(SyntaxKind.IDENTIFIER_TOKEN);
         return parseMemberAccessExpression(identifier);
     }
+*/
 
     private ExpressionSyntax parsePrimaryExpression() {
         ExpressionSyntax expression = parseInternalPrimary();
 
-        // parse identifier
-
-        if (current().getKind() == SyntaxKind.DOT_TOKEN) {
-            expression = parseMemberAccessExpression(expression);
+        while (true) {
+            if (current().getKind() == SyntaxKind.DOT_TOKEN) {
+                SyntaxToken dotToken = nextToken();
+                SyntaxToken memberToken = matchToken(SyntaxKind.IDENTIFIER_TOKEN);
+                expression = new MemberAccessExpressionSyntax(syntaxTree, expression, dotToken, memberToken);
+            } else if (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
+                SyntaxToken leftBracket = nextToken();
+                ExpressionSyntax index = parseExpression();
+                SyntaxToken rightBracket = matchToken(SyntaxKind.CLOSE_BRACKET_TOKEN);
+                expression = new ArrayAccessExpressionSyntax(syntaxTree, expression, leftBracket, index, rightBracket);
+            } else {
+                break;
+            }
         }
 
         if (current().getKind() == SyntaxKind.OPEN_PARENTHESIS_TOKEN) {
@@ -651,15 +722,82 @@ public final class Parser {
             return new MethodCallExpressionSyntax(syntaxTree, expression, leftParenthesis, arguments, rightParenthesis);
         }
 
+        return expression;
+    }
+
+    private ExpressionSyntax parseInternalPrimary() {
+        // parse parenthesized expression
+        if (current().getKind() == SyntaxKind.OPEN_PARENTHESIS_TOKEN) {
+            SyntaxToken left = nextToken();
+            ExpressionSyntax expression = parseExpression();
+            SyntaxToken right = matchToken(SyntaxKind.CLOSE_PARENTHESIS_TOKEN);
+            return new ParenthesizedExpressionSyntax(syntaxTree, left, expression, right);
+        }
+
+        // parse number literal
+        if (current().getKind() == SyntaxKind.NUMBER_TOKEN) {
+            SyntaxToken numberToken = nextToken();
+            return new LiteralExpressionSyntax(syntaxTree, numberToken);
+        }
+
+        if (current().getKind() == SyntaxKind.FLOATING_POINT_TOKEN) {
+            SyntaxToken floatingPointToken = nextToken();
+            return new LiteralExpressionSyntax(syntaxTree, floatingPointToken);
+        }
+
+        // parse boolean literal
+        if (current().getKind() == SyntaxKind.TRUE_KEYWORD ||
+                current().getKind() == SyntaxKind.FALSE_KEYWORD) {
+            SyntaxToken booleanToken = nextToken();
+            return new LiteralExpressionSyntax(syntaxTree, booleanToken);
+        }
+
+        // parse string literal
+        if (current().getKind() == SyntaxKind.STRING_TOKEN) {
+            SyntaxToken stringToken = nextToken();
+            return new LiteralExpressionSyntax(syntaxTree, stringToken);
+        }
+
+        // parse array creation
+        if (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
+            SyntaxToken leftBracket = nextToken();
+            SeparatedSyntaxList<ExpressionSyntax> elements = parseArrayElements();
+            SyntaxToken rightBracket = matchToken(SyntaxKind.CLOSE_BRACKET_TOKEN);
+            return new ArrayLiteralExpressionSyntax(syntaxTree, leftBracket, elements, rightBracket);
+        }
+
+        SyntaxToken identifier = matchToken(SyntaxKind.IDENTIFIER_TOKEN);
+        ExpressionSyntax expression = new NameExpressionSyntax(syntaxTree, identifier);
+
         if (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
             SyntaxToken leftBracket = nextToken();
             ExpressionSyntax index = parseExpression();
             SyntaxToken rightBracket = matchToken(SyntaxKind.CLOSE_BRACKET_TOKEN);
-            return new ArrayAccessExpressionSyntax(syntaxTree, expression, leftBracket, index, rightBracket);
+            expression = new ArrayAccessExpressionSyntax(syntaxTree, expression, leftBracket, index, rightBracket);
+        }
+        while (current().getKind() == SyntaxKind.DOT_TOKEN || current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
+            if (current().getKind() == SyntaxKind.DOT_TOKEN) {
+                SyntaxToken dotToken = nextToken();
+                SyntaxToken memberToken = matchToken(SyntaxKind.IDENTIFIER_TOKEN);
+                expression = new MemberAccessExpressionSyntax(syntaxTree, expression, dotToken, memberToken);
+            } else {
+                SyntaxToken openBracketToken = matchToken(SyntaxKind.OPEN_BRACKET_TOKEN);
+                ExpressionSyntax index = parseExpression();
+                SyntaxToken closeBracketToken = matchToken(SyntaxKind.CLOSE_BRACKET_TOKEN);
+                expression = new ArrayAccessExpressionSyntax(syntaxTree, expression, openBracketToken, index, closeBracketToken);
+            }
+        }
+
+        if (current().getKind() == SyntaxKind.OPEN_PARENTHESIS_TOKEN) {
+            SyntaxToken leftParenthesis = nextToken();
+            SeparatedSyntaxList<ExpressionSyntax> arguments = parseArguments();
+            SyntaxToken rightParenthesis = matchToken(SyntaxKind.CLOSE_PARENTHESIS_TOKEN);
+            return new MethodCallExpressionSyntax(syntaxTree, expression, leftParenthesis, arguments, rightParenthesis);
         }
 
         return expression;
     }
+
 
     private ExpressionSyntax parseMemberAccessExpression(ExpressionSyntax expression) {
         while (current().getKind() == SyntaxKind.DOT_TOKEN) {

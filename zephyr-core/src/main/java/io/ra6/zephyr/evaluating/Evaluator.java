@@ -1,13 +1,13 @@
 package io.ra6.zephyr.evaluating;
 
-import io.ra6.zephyr.codeanalysis.binding.*;
-import io.ra6.zephyr.codeanalysis.binding.expressions.*;
-import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
-import io.ra6.zephyr.codeanalysis.binding.statements.*;
 import io.ra6.zephyr.builtin.BuiltinTypes;
 import io.ra6.zephyr.builtin.InternalBinaryOperator;
 import io.ra6.zephyr.builtin.InternalFunction;
 import io.ra6.zephyr.builtin.InternalUnaryOperator;
+import io.ra6.zephyr.codeanalysis.binding.*;
+import io.ra6.zephyr.codeanalysis.binding.expressions.*;
+import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
+import io.ra6.zephyr.codeanalysis.binding.statements.*;
 import io.ra6.zephyr.codeanalysis.symbols.*;
 import io.ra6.zephyr.runtime.TypeInstance;
 import io.ra6.zephyr.runtime.VariableTable;
@@ -55,14 +55,15 @@ public final class Evaluator {
         boolean hasArgs = false;
 
         if (main.getParameters().size() == 2) {
-            if (main.getParameters().get(0).getType() == BuiltinTypes.INT && main.getParameters().get(1).getType() == BuiltinTypes.STRING) {
+            if (main.getParameters().get(0).getType().equals(BuiltinTypes.INT) &&
+                    main.getParameters().get(1).getType().equals(new ArrayTypeSymbol(BuiltinTypes.STRING))) {
                 hasArgs = true;
             } else {
-                System.out.println("Main function has invalid parameters. Need a main function with parameters (int, string[]) or no parameters to run the program.");
+                System.out.println("Main function has invalid parameters. Need a main function with parameters (int, str[]) or no parameters to run the program.");
                 return new EvaluationResult(-1);
             }
         } else if (main.getParameters().size() != 0) {
-            System.out.println("Main function has invalid parameters. Need a main function with parameters (int, string[]) or no parameters to run the program.");
+            System.out.println("Main function has invalid parameters. Need a main function with parameters (int, str[]) or no parameters to run the program.");
             return new EvaluationResult(-1);
         }
 
@@ -78,10 +79,10 @@ public final class Evaluator {
 
         VariableSymbol argcSymbol = new VariableSymbol("argc", true, BuiltinTypes.INT);
         // TODO: add array
-        VariableSymbol argvSymbol = new VariableSymbol("argv", true, BuiltinTypes.STRING);
+        VariableSymbol argvSymbol = new VariableSymbol("argv", true, new ArrayTypeSymbol(BuiltinTypes.STRING));
 
         assign(argcSymbol, args.length);
-        assign(argvSymbol, String.join(" ", args));
+        assign(argvSymbol, List.of(args));
 
         BoundBlockStatement mainFunctionBody = boundProgram.getProgramScope().getTypeScope(entryType).getFunctionScope(mainFunction);
         evaluateStatement(mainFunctionBody);
@@ -172,13 +173,40 @@ public final class Evaluator {
             case FIELD_ACCESS_EXPRESSION -> evaluateFieldAccessExpression((BoundFieldAccessExpression) expression);
             case INSTANCE_CREATION_EXPRESSION ->
                     evaluateInstanceCreationExpression((BoundInstanceCreationExpression) expression);
+            case ARRAY_LITERAL_EXPRESSION -> evaluateArrayLiteralExpression((BoundArrayLiteralExpression) expression);
             case THIS_EXPRESSION -> evaluateThisExpression((BoundThisExpression) expression);
             case TYPE_EXPRESSION -> evaluateTypeExpression((BoundTypeExpression) expression);
             case INTERNAL_FUNCTION_EXPRESSION ->
                     evaluateInternalFunctionExpression((BoundInternalFunctionExpression) expression);
             case ERROR_EXPRESSION -> throw new RuntimeException("Error expression");
+            case ARRAY_ACCESS_EXPRESSION -> evaluateArrayAccessExpression((BoundArrayAccessExpression) expression);
             default -> throw new RuntimeException("Unexpected expression kind: " + expression.getKind());
         };
+    }
+
+    private Object evaluateArrayAccessExpression(BoundArrayAccessExpression expression) {
+        Object array = evaluateExpression(expression.getTarget());
+        Object index = evaluateExpression(expression.getIndex());
+
+        if (!(array instanceof List)) {
+            throw new RuntimeException("Cannot access array element of non-array type");
+        }
+
+        if (!(index instanceof Integer)) {
+            throw new RuntimeException("Array index must be an integer");
+        }
+
+        return ((List<?>) array).get((Integer) index);
+    }
+
+    private Object evaluateArrayLiteralExpression(BoundArrayLiteralExpression expression) {
+        List<Object> values = new ArrayList<>();
+
+        for (BoundExpression e : expression.getElements()) {
+            values.add(evaluateExpression(e));
+        }
+
+        return values;
     }
 
     private Object evaluateInternalFunctionExpression(BoundInternalFunctionExpression expression) {
@@ -345,18 +373,28 @@ public final class Evaluator {
 
         Object calleeValue = evaluateExpression(expression.getCallee());
 
+
         if (calleeValue instanceof TypeInstance instance) {
             return evaluateInstanceMethodCall(instance, expression.getFunction(), expression.getArguments());
         } else if (calleeValue instanceof TypeSymbol type) {
             return evaluateSharedFunctionCall(type, expression.getFunction(), expression.getArguments());
-        } else if (calleeValue instanceof FunctionSymbol function) {
+        }
 
+        if (callee instanceof BoundLiteralExpression literalExpression) {
+            if(BuiltinTypes.isValidLiteralType(literalExpression.getType())) {
+                return evaluateBuiltinFunctionCall(callee, literalExpression.getType(), expression.getFunction(), expression.getArguments());
+            }
+        }
+
+        if(BuiltinTypes.isValidLiteralType(calleeValue.getClass())){
+            return evaluateBuiltinFunctionCall(callee, BuiltinTypes.getLiteralType(calleeValue.getClass()), expression.getFunction(), expression.getArguments());
         }
 
         throw new RuntimeException("Unexpected callee type: " + calleeValue.getClass().getSimpleName());
     }
 
-    private Object evaluateBuiltinFunctionCall(BoundExpression callee, TypeSymbol type, FunctionSymbol function, List<BoundExpression> arguments) {
+    private Object evaluateBuiltinFunctionCall(BoundExpression callee, TypeSymbol type, FunctionSymbol
+            function, List<BoundExpression> arguments) {
         List<Object> evaluatedArguments = new ArrayList<>();
         for (BoundExpression argument : arguments) {
             evaluatedArguments.add(evaluateExpression(argument));
@@ -382,7 +420,8 @@ public final class Evaluator {
         return result;
     }
 
-    private Object evaluateInstanceMethodCall(TypeInstance instance, FunctionSymbol function, List<BoundExpression> arguments) {
+    private Object evaluateInstanceMethodCall(TypeInstance instance, FunctionSymbol
+            function, List<BoundExpression> arguments) {
         if (function.isShared()) {
             throw new RuntimeException("Cannot call shared function from instance context");
         }
@@ -410,7 +449,8 @@ public final class Evaluator {
         return result;
     }
 
-    private Object evaluateSharedFunctionCall(TypeSymbol type, FunctionSymbol function, List<BoundExpression> arguments) {
+    private Object evaluateSharedFunctionCall(TypeSymbol type, FunctionSymbol
+            function, List<BoundExpression> arguments) {
         if (!function.isShared()) {
             throw new RuntimeException("Cannot call non-shared function from static context");
         }

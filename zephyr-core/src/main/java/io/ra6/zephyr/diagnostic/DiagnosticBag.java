@@ -339,4 +339,10 @@ public final class DiagnosticBag {
         String hint = "Make sure the member is declared as 'public'.";
         reportError(location, message, hint);
     }
+
+    public void reportCannotIndex(TextLocation location, TypeSymbol type) {
+        String message = "Cannot index type '%s'.".formatted(type);
+        String hint = "Make sure the type is indexable.";
+        reportError(location, message, hint);
+    }
 }
