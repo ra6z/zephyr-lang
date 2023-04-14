@@ -1073,7 +1073,14 @@ public class Binder {
             boolean isParameterGeneric = genericTypes.containsKey(parameter.getType().getName());
 
             if (isParameterGeneric) {
-                argument = bindConversion(argument, genericTypes.get(parameter.getType().getName()), parameter.getType());
+                // check if mapped generic type equals the argument type
+                TypeSymbol mappedGenericType = genericTypes.get(parameter.getType().getName());
+                if (!mappedGenericType.equals(argument.getType())) {
+                    diagnostics.reportMismatchingTypes(argumentSyntax.getLocation(), mappedGenericType, argument.getType());
+                    return bindErrorExpression(syntax);
+                }
+
+                argument = bindConversion(argument, parameter.getType(), genericTypes.get(parameter.getType().getName()));
             }
 
             if (!parameter.getType().equals(argument.getType())) {
@@ -1124,6 +1131,13 @@ public class Binder {
                     boolean isParameterGeneric = variable.getVariable().isGenericType(parameter.getType().getName());
 
                     if (isParameterGeneric) {
+                        // check if mapped generic type equals the argument type
+                        TypeSymbol mappedGenericType = variable.getVariable().getGenericType(parameter.getType().getName());
+                        if (!mappedGenericType.equals(argument.getType())) {
+                            diagnostics.reportMismatchingTypes(argumentSyntax.getLocation(), mappedGenericType, argument.getType());
+                            return bindErrorExpression(syntax);
+                        }
+
                         argument = bindConversion(argument, parameter.getType(), variable.getVariable().getGenericType(parameter.getType().getName()));
                     }
 

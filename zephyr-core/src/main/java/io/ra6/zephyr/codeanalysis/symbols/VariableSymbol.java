@@ -21,10 +21,6 @@ public class VariableSymbol extends Symbol {
         this.type = type;
     }
 
-    public boolean isVariableGeneric() {
-        return genericTypes != null && !genericTypes.isEmpty();
-    }
-
     public TypeSymbol getGenericType(String name) {
         return genericTypes.get(name);
     }
