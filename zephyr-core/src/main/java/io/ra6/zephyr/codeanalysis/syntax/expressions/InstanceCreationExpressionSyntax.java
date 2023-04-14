@@ -10,6 +10,8 @@ public class InstanceCreationExpressionSyntax extends ExpressionSyntax {
     @Getter
     private final SyntaxToken newKeyword;
     @Getter
+    private final GenericParameterClauseSyntax genericParameterClause;
+    @Getter
     private final QualifiedNameSyntax qualifiedName;
     @Getter
     private final SyntaxToken leftParenthesis;
@@ -18,9 +20,10 @@ public class InstanceCreationExpressionSyntax extends ExpressionSyntax {
     @Getter
     private final SyntaxToken rightParenthesis;
 
-    public InstanceCreationExpressionSyntax(SyntaxTree syntaxTree, SyntaxToken newKeyword, QualifiedNameSyntax qualifiedName, SyntaxToken leftParenthesis, SeparatedSyntaxList<ExpressionSyntax> arguments, SyntaxToken rightParenthesis) {
+    public InstanceCreationExpressionSyntax(SyntaxTree syntaxTree, SyntaxToken newKeyword, GenericParameterClauseSyntax genericParameterClause, QualifiedNameSyntax qualifiedName, SyntaxToken leftParenthesis, SeparatedSyntaxList<ExpressionSyntax> arguments, SyntaxToken rightParenthesis) {
         super(syntaxTree);
         this.newKeyword = newKeyword;
+        this.genericParameterClause = genericParameterClause;
         this.qualifiedName = qualifiedName;
         this.leftParenthesis = leftParenthesis;
         this.arguments = arguments;
@@ -37,6 +40,7 @@ public class InstanceCreationExpressionSyntax extends ExpressionSyntax {
         List<SyntaxNode> result = new ArrayList<>();
         result.add(newKeyword);
         result.add(qualifiedName);
+        if (genericParameterClause != null) result.add(genericParameterClause);
         result.add(leftParenthesis);
         result.addAll(arguments.getNodesAndSeparators());
         result.add(rightParenthesis);

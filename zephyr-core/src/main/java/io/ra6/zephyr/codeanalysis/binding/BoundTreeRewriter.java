@@ -130,8 +130,42 @@ public abstract class BoundTreeRewriter {
             case FIELD_ACCESS_EXPRESSION -> rewriteFieldAccessExpression((BoundFieldAccessExpression) node);
             case ARRAY_LITERAL_EXPRESSION -> rewriteArrayLiteralExpression((BoundArrayLiteralExpression) node);
             case ARRAY_ACCESS_EXPRESSION -> rewriteArrayAccessExpression((BoundArrayAccessExpression) node);
+            case ARRAY_CREATION_EXPRESSION -> rewriteArrayCreationExpression((BoundArrayCreationExpression) node);
+            case CONVERSION_EXPRESSION -> rewriteConversionExpression((BoundConversionExpression) node);
             default -> throw new IllegalArgumentException("Cannot rewrite " + node.getKind());
         };
+    }
+
+    private BoundExpression rewriteConversionExpression(BoundConversionExpression node) {
+        BoundExpression expression = rewriteExpression(node.getExpression());
+        if (expression == node.getExpression())
+            return node;
+        return node;
+    }
+
+    private BoundExpression rewriteArrayCreationExpression(BoundArrayCreationExpression node) {
+        List<BoundExpression> sizes = null;
+
+        for (int i = 0; i < node.getDimensions().size(); i++) {
+            BoundExpression oldSize = node.getDimensions().get(i);
+            BoundExpression newSize = rewriteExpression(oldSize);
+
+            if (newSize != oldSize) {
+                if (sizes == null) {
+                    sizes = new ArrayList<>(node.getDimensions().subList(0, i));
+                }
+
+                sizes.add(newSize);
+            } else if (sizes != null) {
+                sizes.add(oldSize);
+            }
+        }
+
+        if (sizes == null) {
+            return node;
+        }
+
+        return new BoundArrayCreationExpression(node.getSyntax(), node.getType(), sizes);
     }
 
     private BoundExpression rewriteArrayAccessExpression(BoundArrayAccessExpression node) {
@@ -193,7 +227,7 @@ public abstract class BoundTreeRewriter {
             return node;
         }
 
-        return new BoundInstanceCreationExpression(node.getSyntax(), node.getType(), arguments);
+        return new BoundInstanceCreationExpression(node.getSyntax(), node.getType(), arguments, node.getGenericTypes());
     }
 
     protected BoundExpression rewriteMethodCallExpression(BoundMethodCallExpression node) {

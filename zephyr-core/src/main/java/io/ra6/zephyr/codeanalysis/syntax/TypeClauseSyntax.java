@@ -2,6 +2,7 @@ package io.ra6.zephyr.codeanalysis.syntax;
 
 import lombok.Getter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class TypeClauseSyntax extends SyntaxNode {
@@ -9,13 +10,16 @@ public class TypeClauseSyntax extends SyntaxNode {
     private final SyntaxToken colonToken;
     @Getter
     private final QualifiedNameSyntax typeName;
+    @Getter
+    private final GenericParameterClauseSyntax genericParameterClause;
 
 
-    public TypeClauseSyntax(SyntaxTree syntaxTree, SyntaxToken colonToken, QualifiedNameSyntax typeName) {
+    public TypeClauseSyntax(SyntaxTree syntaxTree, SyntaxToken colonToken, QualifiedNameSyntax typeName, GenericParameterClauseSyntax genericParameterClause) {
         super(syntaxTree);
 
         this.colonToken = colonToken;
         this.typeName = typeName;
+        this.genericParameterClause = genericParameterClause;
     }
 
     @Override
@@ -25,6 +29,8 @@ public class TypeClauseSyntax extends SyntaxNode {
 
     @Override
     public List<SyntaxNode> getChildren() {
-        return List.of(colonToken, typeName);
+        List<SyntaxNode> result = new ArrayList<>(List.of(colonToken, typeName));
+        if (genericParameterClause != null) result.add(genericParameterClause);
+        return result;
     }
 }

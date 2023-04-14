@@ -1,6 +1,7 @@
 package io.ra6.zephyr.codeanalysis.symbols;
 
 import io.ra6.zephyr.builtin.BuiltinTypes;
+import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
@@ -21,8 +22,20 @@ public class TypeSymbol extends Symbol {
     @Setter
     private List<BinaryOperatorSymbol> binaryOperators = new ArrayList<>();
 
+    @Setter
+    private List<String> genericTypes = new ArrayList<>();
+
+    @Getter
+    private boolean isGeneric;
+
     public TypeSymbol(String name) {
         super(name);
+    }
+
+    public static TypeSymbol createGeneric(String name) {
+        TypeSymbol symbol = new TypeSymbol(name);
+        symbol.isGeneric = true;
+        return symbol;
     }
 
     public boolean isBinaryOperatorDefined(String operator, TypeSymbol toSymbol) {
@@ -112,4 +125,17 @@ public class TypeSymbol extends Symbol {
         }
         return super.equals(obj);
     }
+
+    public boolean isGeneric(String name) {
+        return genericTypes.contains(name);
+    }
+
+    public int getGenericCount() {
+        return genericTypes.size();
+    }
+
+    public String getGenericAt(int index) {
+        return genericTypes.get(index);
+    }
+
 }

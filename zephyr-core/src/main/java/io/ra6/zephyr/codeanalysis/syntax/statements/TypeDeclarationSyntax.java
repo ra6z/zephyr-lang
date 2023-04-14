@@ -12,16 +12,19 @@ public class TypeDeclarationSyntax extends StatementSyntax {
     @Getter
     private final SyntaxToken identifier;
     @Getter
+    private final GenericParameterClauseSyntax genericParameterClause;
+    @Getter
     private final SyntaxToken openBraceToken;
     @Getter
     private final List<StatementSyntax> members;
     @Getter
     private final SyntaxToken closeBraceToken;
 
-    public TypeDeclarationSyntax(SyntaxTree syntaxTree, SyntaxToken typeKeyword, SyntaxToken identifier, SyntaxToken openBraceToken, List<StatementSyntax> members, SyntaxToken closeBraceToken) {
+    public TypeDeclarationSyntax(SyntaxTree syntaxTree, SyntaxToken typeKeyword, SyntaxToken identifier, GenericParameterClauseSyntax genericParameterClause, SyntaxToken openBraceToken, List<StatementSyntax> members, SyntaxToken closeBraceToken) {
         super(syntaxTree);
         this.typeKeyword = typeKeyword;
         this.identifier = identifier;
+        this.genericParameterClause = genericParameterClause;
         this.openBraceToken = openBraceToken;
         this.members = members;
         this.closeBraceToken = closeBraceToken;
@@ -41,6 +44,7 @@ public class TypeDeclarationSyntax extends StatementSyntax {
         List<SyntaxNode> result = new ArrayList<>();
         result.add(typeKeyword);
         result.add(identifier);
+        if (genericParameterClause != null) result.add(genericParameterClause);
         result.add(openBraceToken);
         result.addAll(members);
         result.add(closeBraceToken);

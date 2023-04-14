@@ -14,6 +14,7 @@ public class BuiltinTypes {
     public static final TypeSymbol BOOL = new TypeSymbol("bool");
     public static final TypeSymbol ERROR = new TypeSymbol("error");
     public static final TypeSymbol DOUBLE = new TypeSymbol("double");
+    public static final TypeSymbol UNKNOWN = new TypeSymbol("?");
 
     private static final HashMap<TypeSymbol, BuiltinType> types = new HashMap<>();
     private static final HashMap<Class<?>, TypeSymbol> literalTypeMapping = new HashMap<>();

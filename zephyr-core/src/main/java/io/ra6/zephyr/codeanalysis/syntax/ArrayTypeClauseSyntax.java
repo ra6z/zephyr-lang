@@ -9,7 +9,7 @@ public class ArrayTypeClauseSyntax extends TypeClauseSyntax {
     private final List<SyntaxToken> brackets;
 
     public ArrayTypeClauseSyntax(SyntaxTree syntaxTree, SyntaxToken colonToken, QualifiedNameSyntax elementName, List<SyntaxToken> brackets) {
-        super(syntaxTree, colonToken, elementName);
+        super(syntaxTree, colonToken, elementName, null);
         this.brackets = brackets;
     }
 

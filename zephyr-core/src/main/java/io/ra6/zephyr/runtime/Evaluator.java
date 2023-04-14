@@ -185,8 +185,85 @@ public final class Evaluator {
                     evaluateInternalFunctionExpression((BoundInternalFunctionExpression) expression);
             case ERROR_EXPRESSION -> throw new RuntimeException("Error expression");
             case ARRAY_ACCESS_EXPRESSION -> evaluateArrayAccessExpression((BoundArrayAccessExpression) expression);
+            case ARRAY_CREATION_EXPRESSION ->
+                    evaluateArrayCreationExpression((BoundArrayCreationExpression) expression);
+            case CONVERSION_EXPRESSION -> evaluateConversionExpression((BoundConversionExpression) expression);
             default -> throw new RuntimeException("Unexpected expression kind: " + expression.getKind());
         };
+    }
+
+    private Object evaluateConversionExpression(BoundConversionExpression expression) {
+        Object value = evaluateExpression(expression.getExpression());
+        return convert(value, expression.getType());
+    }
+
+    private Object convert(Object value, TypeSymbol type) {
+
+        return value;
+    }
+
+    private static List<?> createMultiDimensionalList(List<Integer> dimensions, int depth) {
+        List<Object> result = new ArrayList<>();
+        if (depth == 1) {
+            for (int i = 0; i < dimensions.get(0); i++) {
+                result.add(null);
+            }
+        } else {
+            for (int i = 0; i < dimensions.get(0); i++) {
+                List<Integer> subDimensions = dimensions.subList(1, dimensions.size());
+                result.add(createMultiDimensionalList(subDimensions, depth - 1));
+            }
+        }
+        return result;
+    }
+
+    private Object evaluateArrayCreationExpression(BoundArrayCreationExpression expression) {
+        List<Integer> dimensions = new ArrayList<>();
+
+        for (int i = 0; i < expression.getDimensions().size(); i++) {
+            Object value = evaluateExpression(expression.getDimensions().get(i));
+
+            if (!(value instanceof Integer valueInt)) {
+                throw new RuntimeException("Array dimension must be an integer");
+            }
+
+            if (valueInt < 0) {
+                throw new RuntimeException("Array dimension must be positive");
+            }
+
+            dimensions.add(valueInt);
+        }
+
+        /*
+            int[2][2] ->
+            List<Object> t = new ArrayList<>(
+                new ArrayList<>(2),
+                new ArrayList<>(2)
+            );
+
+            int[4][4] ->
+            List<Object> t = new ArrayList<>(
+                new ArrayList<>(4),
+                new ArrayList<>(4),
+                new ArrayList<>(4),
+                new ArrayList<>(4)
+            );
+
+            int[2][2][2] ->
+
+            List<Object> t = new ArrayList<>(
+                new ArrayList<>(
+                    new ArrayList<>(2),
+                    new ArrayList<>(2)
+                ),
+                new ArrayList<>(
+                    new ArrayList<>(2),
+                    new ArrayList<>(2)
+                )
+            );
+         */
+
+        return createMultiDimensionalList(dimensions, dimensions.size());
     }
 
     private Object evaluateArrayAccessExpression(BoundArrayAccessExpression expression) {

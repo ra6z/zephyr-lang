@@ -106,6 +106,7 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
     - [x] `array.length`
   - [x] Array functions
     - [x] `array.copy()`
+- [x] Generic types (e.g. `type MyType<T> { ... }`)
 - [ ] Type aliases (e.g. `type MyType = int;`)
 - [ ] Additional syntax
   - [ ] `for` loops
@@ -123,9 +124,6 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
         - [ ] `///` doc comments
         - [ ] `//!` doc comments
     - [ ] Newlines
-- [ ] Generic types (e.g. `type MyType<T> { ... }`)
-  - [ ] Generic type constraints (e.g. `type MyType<T: int> { ... }`)
-  - [ ] Generic function constraints (e.g. `fn myFunction<T: int>(arg: T) { ... }`)
 - [ ] Interfaces (e.g. `interface MyInterface { ... }`)
   - [ ] Types that implement interfaces (e.g. `type MyType implements MyInterface { ... }`)
 - [ ] Enums (e.g. `enum MyEnum { ... }`) 
@@ -183,17 +181,6 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
 
 * [std:io](STD-IO.md)
 * [std:math](STD-MATH.md)
-* [std:ui](STD-UI.md)
-* [std:data/json](STD-DATA-JSON.md)
-* [std:data/xml](STD-DATA-XML.md)
-* [std:net](STD-WEB.md)
-* [std:net/http](STD-NET-HTTP.md)
-* [std:net/irc](STD-NET-IRC.md)
-* [std:threading](STD-THREADING.md)
-* [std:time](STD-TIME.md)
-* [std:config](STD-CONFIG.md)
-* [std:crypto](STD-CRYPTO.md)
-* [std:debug](STD-DEBUG.md)
 
 ## License
 

@@ -345,4 +345,34 @@ public final class DiagnosticBag {
         String hint = "Make sure the type is indexable.";
         reportError(location, message, hint);
     }
+
+    public void reportGenericParameterAlreadyDeclared(TextLocation location, String text) {
+        String message = "Generic parameter '%s' is already declared in this scope.".formatted(text);
+        String hint = "Make sure each generic parameter is declared only once.";
+        reportError(location, message, hint);
+    }
+
+    public void reportArrayCreationMustHaveSize(TextLocation location) {
+        String message = "Array creation must have a size.";
+        String hint = "Make sure the array creation has a size.";
+        reportError(location, message, hint);
+    }
+
+    public void reportArrayCreationSizeMustBeInt(TextLocation location) {
+        String message = "Array creation size must be of type 'int'.";
+        String hint = "Make sure the array creation size is of type 'int'.";
+        reportError(location, message, hint);
+    }
+
+    public void reportGenericAlreadyDeclared(TextLocation location, String genericName) {
+        String message = "Generic '%s' is already declared in this scope.".formatted(genericName);
+        String hint = "Make sure each generic is declared only once.";
+        reportError(location, message, hint);
+    }
+
+    public void reportGenericParameterCountMismatch(TextLocation textLocation, TypeSymbol type, int genericCount) {
+        String message = "Generic count mismatch for type '%s'. Expected %d but found %d.".formatted(type, type.getGenericCount(), genericCount);
+        String hint = "Make sure the generic count matches the type.";
+        reportError(textLocation, message, hint);
+    }
 }

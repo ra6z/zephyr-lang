@@ -22,6 +22,9 @@ public class BoundTypeScope extends BoundScope {
     private final SymbolTable<BinaryOperatorSymbol, BoundBlockStatement> binaryOperators = new SymbolTable<>();
     private final SymbolTable<UnaryOperatorSymbol, BoundBlockStatement> unaryOperators = new SymbolTable<>();
 
+    @Getter
+    private final List<String> declaredGenericTypes = new ArrayList<>();
+
     public BoundTypeScope(BoundScope parent, TypeSymbol type) {
         super(parent, BoundScopeKind.TYPE);
         this.type = type;
@@ -191,5 +194,13 @@ public class BoundTypeScope extends BoundScope {
                 .findFirst()
                 .map(binaryOperators::getDefinition)
                 .orElse(null);
+    }
+
+    public boolean isGenericDeclared(String genericName) {
+        return declaredGenericTypes.stream().anyMatch(g -> g.equals(genericName));
+    }
+
+    public void declareGeneric(String genericName) {
+        declaredGenericTypes.add(genericName);
     }
 }

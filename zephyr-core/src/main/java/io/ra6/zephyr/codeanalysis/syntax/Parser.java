@@ -62,17 +62,55 @@ public final class Parser {
     private StatementSyntax parseTypeDeclaration() {
         SyntaxToken typeKeyword = matchToken(SyntaxKind.TYPE_KEYWORD);
         SyntaxToken identifierToken = matchToken(SyntaxKind.IDENTIFIER_TOKEN);
+
+        GenericParameterClauseSyntax genericParameterClause = null;
+        if (current().getKind() == SyntaxKind.LESS_TOKEN) {
+            genericParameterClause = parseGenericParameterClause();
+        }
+
         SyntaxToken openBraceToken = matchToken(SyntaxKind.OPEN_BRACE_TOKEN);
 
         List<StatementSyntax> members = new ArrayList<>();
         while (current().getKind() != SyntaxKind.CLOSE_BRACE_TOKEN &&
                 current().getKind() != SyntaxKind.END_OF_FILE_TOKEN) {
+            SyntaxToken memberKeyword = current();
+
             StatementSyntax member = parseTypeMember();
             members.add(member);
+
+            if (memberKeyword == current())
+                break;
         }
 
         SyntaxToken closeBraceToken = matchToken(SyntaxKind.CLOSE_BRACE_TOKEN);
-        return new TypeDeclarationSyntax(syntaxTree, typeKeyword, identifierToken, openBraceToken, members, closeBraceToken);
+        return new TypeDeclarationSyntax(syntaxTree, typeKeyword, identifierToken, genericParameterClause, openBraceToken, members, closeBraceToken);
+    }
+
+    private GenericParameterClauseSyntax parseGenericParameterClause() {
+        SyntaxToken lessToken = matchToken(SyntaxKind.LESS_TOKEN);
+
+        List<SyntaxNode> parameters = new ArrayList<>();
+
+        if (current().getKind() != SyntaxKind.GREATER_TOKEN) {
+            GenericParameterSyntax firstParameter = parseGenericParameter();
+            parameters.add(firstParameter);
+
+            while (current().getKind() == SyntaxKind.COMMA_TOKEN) {
+                SyntaxToken commaToken = matchToken(SyntaxKind.COMMA_TOKEN);
+                GenericParameterSyntax nextParameter = parseGenericParameter();
+
+                parameters.add(commaToken);
+                parameters.add(nextParameter);
+            }
+        }
+
+        SyntaxToken greaterToken = matchToken(SyntaxKind.GREATER_TOKEN);
+        return new GenericParameterClauseSyntax(syntaxTree, lessToken, new SeparatedSyntaxList<>(parameters), greaterToken);
+    }
+
+    private GenericParameterSyntax parseGenericParameter() {
+        SyntaxToken identifier = matchToken(SyntaxKind.IDENTIFIER_TOKEN);
+        return new GenericParameterSyntax(syntaxTree, identifier);
     }
 
     private StatementSyntax parseTypeMember() {
@@ -129,12 +167,6 @@ public final class Parser {
         SyntaxToken binaryOperatorKeyword = matchToken(SyntaxKind.BINARY_OPERATOR_KEYWORD);
         SyntaxToken operatorToken = nextToken();
         SyntaxToken openParenToken = matchToken(SyntaxKind.OPEN_PARENTHESIS_TOKEN);
-
-        /*
-        SyntaxToken leftOperandToken = matchToken(SyntaxKind.IDENTIFIER_TOKEN);
-        TypeClauseSyntax leftOperandType = parseTypeClause();
-        SyntaxToken commaToken = matchToken(SyntaxKind.COMMA_TOKEN);
-        */
         SyntaxToken rightOperandToken = matchToken(SyntaxKind.IDENTIFIER_TOKEN);
         TypeClauseSyntax rightOperandType = parseTypeClause();
         SyntaxToken closeParenToken = matchToken(SyntaxKind.CLOSE_PARENTHESIS_TOKEN);
@@ -348,11 +380,17 @@ public final class Parser {
         SyntaxToken colonToken = matchToken(SyntaxKind.COLON_TOKEN);
         QualifiedNameSyntax typeName = parseQualifiedName();
 
+        GenericParameterClauseSyntax genericParameter = null;
+        if (current().getKind() == SyntaxKind.LESS_TOKEN) {
+            genericParameter = parseGenericParameterClause();
+        }
+
+
         if (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
             return parseArrayType(colonToken, typeName);
         }
 
-        return new TypeClauseSyntax(syntaxTree, colonToken, typeName);
+        return new TypeClauseSyntax(syntaxTree, colonToken, typeName, genericParameter);
     }
 
     private TypeClauseSyntax parseArrayType(SyntaxToken colonToken, QualifiedNameSyntax elementName) {
@@ -601,13 +639,40 @@ public final class Parser {
         if (current().getKind() == SyntaxKind.NEW_KEYWORD) {
             SyntaxToken newKeyword = matchToken(SyntaxKind.NEW_KEYWORD);
             QualifiedNameSyntax qualifiedName = parseQualifiedName();
+
+            GenericParameterClauseSyntax genericParameter = null;
+            if (current().getKind() == SyntaxKind.LESS_TOKEN) {
+                genericParameter = parseGenericParameterClause();
+            }
+
+            if (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
+                List<ArraySizeClauseSyntax> arraySizeClauses = new ArrayList<>();
+                ArraySizeClauseSyntax arraySizeClause = parseArraySizeClause();
+                arraySizeClauses.add(arraySizeClause);
+
+                while (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
+                    arraySizeClause = parseArraySizeClause();
+                    arraySizeClauses.add(arraySizeClause);
+                }
+
+                // parse array creation expression
+                return new ArrayCreationExpressionSyntax(syntaxTree, newKeyword, qualifiedName, genericParameter, arraySizeClauses);
+            }
+
             SyntaxToken leftParenthesis = nextToken();
             SeparatedSyntaxList<ExpressionSyntax> arguments = parseArguments();
             SyntaxToken rightParenthesis = matchToken(SyntaxKind.CLOSE_PARENTHESIS_TOKEN);
-            return new InstanceCreationExpressionSyntax(syntaxTree, newKeyword, qualifiedName, leftParenthesis, arguments, rightParenthesis);
+            return new InstanceCreationExpressionSyntax(syntaxTree, newKeyword, genericParameter, qualifiedName, leftParenthesis, arguments, rightParenthesis);
         }
 
         return parsePrimaryExpression();
+    }
+
+    private ArraySizeClauseSyntax parseArraySizeClause() {
+        SyntaxToken openBracket = matchToken(SyntaxKind.OPEN_BRACKET_TOKEN);
+        ExpressionSyntax size = parseExpression();
+        SyntaxToken closeBracket = matchToken(SyntaxKind.CLOSE_BRACKET_TOKEN);
+        return new ArraySizeClauseSyntax(syntaxTree, openBracket, size, closeBracket);
     }
 
     private SeparatedSyntaxList<ExpressionSyntax> parseArrayElements() {
@@ -626,76 +691,6 @@ public final class Parser {
 
         return new SeparatedSyntaxList<>(nodesAndSeparators);
     }
-    /*
-    private ExpressionSyntax parsePrimaryExpression() {
-        ExpressionSyntax expression = parseInternalPrimary();
-
-        // parse identifier
-        if (current().getKind() == SyntaxKind.DOT_TOKEN) {
-            expression = parseMemberAccessExpression(expression);
-        }
-
-        if (current().getKind() == SyntaxKind.OPEN_PARENTHESIS_TOKEN) {
-            SyntaxToken leftParenthesis = nextToken();
-            SeparatedSyntaxList<ExpressionSyntax> arguments = parseArguments();
-            SyntaxToken rightParenthesis = matchToken(SyntaxKind.CLOSE_PARENTHESIS_TOKEN);
-            return new MethodCallExpressionSyntax(syntaxTree, expression, leftParenthesis, arguments, rightParenthesis);
-        }
-
-        if (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
-            SyntaxToken leftBracket = nextToken();
-            ExpressionSyntax index = parseExpression();
-            SyntaxToken rightBracket = matchToken(SyntaxKind.CLOSE_BRACKET_TOKEN);
-            return new ArrayAccessExpressionSyntax(syntaxTree, expression, leftBracket, index, rightBracket);
-        }
-
-        return expression;
-    }
-    private ExpressionSyntax parseInternalPrimary() {
-        // parse parenthesized expression
-        if (current().getKind() == SyntaxKind.OPEN_PARENTHESIS_TOKEN) {
-            SyntaxToken left = nextToken();
-            ExpressionSyntax expression = parseExpression();
-            SyntaxToken right = matchToken(SyntaxKind.CLOSE_PARENTHESIS_TOKEN);
-            return new ParenthesizedExpressionSyntax(syntaxTree, left, expression, right);
-        }
-
-        // parse number literal
-        if (current().getKind() == SyntaxKind.NUMBER_TOKEN) {
-            SyntaxToken numberToken = nextToken();
-            return new LiteralExpressionSyntax(syntaxTree, numberToken);
-        }
-
-        if (current().getKind() == SyntaxKind.FLOATING_POINT_TOKEN) {
-            SyntaxToken floatingPointToken = nextToken();
-            return new LiteralExpressionSyntax(syntaxTree, floatingPointToken);
-        }
-
-        // parse boolean literal
-        if (current().getKind() == SyntaxKind.TRUE_KEYWORD ||
-                current().getKind() == SyntaxKind.FALSE_KEYWORD) {
-            SyntaxToken booleanToken = nextToken();
-            return new LiteralExpressionSyntax(syntaxTree, booleanToken);
-        }
-
-        // parse string literal
-        if (current().getKind() == SyntaxKind.STRING_TOKEN) {
-            SyntaxToken stringToken = nextToken();
-            return new LiteralExpressionSyntax(syntaxTree, stringToken);
-        }
-
-        // parse array creation
-        if (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
-            SyntaxToken leftBracket = nextToken();
-            SeparatedSyntaxList<ExpressionSyntax> elements = parseArrayElements();
-            SyntaxToken rightBracket = matchToken(SyntaxKind.CLOSE_BRACKET_TOKEN);
-            return new ArrayLiteralExpressionSyntax(syntaxTree, leftBracket, elements, rightBracket);
-        }
-
-        SyntaxToken identifier = matchToken(SyntaxKind.IDENTIFIER_TOKEN);
-        return parseMemberAccessExpression(identifier);
-    }
-*/
 
     private ExpressionSyntax parsePrimaryExpression() {
         ExpressionSyntax expression = parseInternalPrimary();
@@ -796,29 +791,6 @@ public final class Parser {
         }
 
         return expression;
-    }
-
-
-    private ExpressionSyntax parseMemberAccessExpression(ExpressionSyntax expression) {
-        while (current().getKind() == SyntaxKind.DOT_TOKEN) {
-            SyntaxToken dotToken = nextToken();
-            SyntaxToken memberToken = matchToken(SyntaxKind.IDENTIFIER_TOKEN);
-            expression = new MemberAccessExpressionSyntax(syntaxTree, expression, dotToken, memberToken);
-        }
-
-        return expression;
-    }
-
-    private ExpressionSyntax parseMemberAccessExpression(SyntaxToken identifier) {
-        ExpressionSyntax left = new NameExpressionSyntax(syntaxTree, identifier);
-
-        while (current().getKind() == SyntaxKind.DOT_TOKEN) {
-            SyntaxToken dotToken = nextToken();
-            SyntaxToken memberToken = matchToken(SyntaxKind.IDENTIFIER_TOKEN);
-            left = new MemberAccessExpressionSyntax(syntaxTree, left, dotToken, memberToken);
-        }
-
-        return left;
     }
 
     private SeparatedSyntaxList<ExpressionSyntax> parseArguments() {

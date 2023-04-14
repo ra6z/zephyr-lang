@@ -21,10 +21,7 @@ import io.ra6.zephyr.sourcefile.SourceText;
 import io.ra6.zephyr.sourcefile.TextLocation;
 import lombok.Getter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Stack;
+import java.util.*;
 
 // TODO: When importing a file from a library, that has already been imported somewhere else, we should not re-parse/bind it.
 
@@ -123,11 +120,27 @@ public class Binder {
             diagnostics.reportTypeAlreadyDeclared(syntax.getIdentifier().getLocation(), typeName);
             return;
         }
+
+        boolean hasGenerics = syntax.getGenericParameterClause() != null;
+
         TypeSymbol type = new TypeSymbol(typeName);
         programScope.declareType(type);
 
         BoundTypeScope typeScope = new BoundTypeScope(scope, type);
         scope = typeScope;
+
+        if (hasGenerics) {
+            for (GenericParameterSyntax genericParameter : syntax.getGenericParameterClause().getGenericParameters()) {
+                String genericName = genericParameter.getIdentifier().getText();
+
+                if (typeScope.isGenericDeclared(genericName)) {
+                    diagnostics.reportGenericAlreadyDeclared(genericParameter.getIdentifier().getLocation(), genericName);
+                    continue;
+                }
+
+                typeScope.declareGeneric(genericName);
+            }
+        }
 
         // Declare first
         for (StatementSyntax member : syntax.getMembers()) {
@@ -148,6 +161,7 @@ public class Binder {
         type.setConstructors(typeScope.getDeclaredConstructors());
         type.setBinaryOperators(typeScope.getDeclaredBinaryOperators());
         type.setUnaryOperators(typeScope.getDeclaredUnaryOperators());
+        type.setGenericTypes(typeScope.getDeclaredGenericTypes());
 
         scope = scope.getParent();
         programScope.defineType(type, typeScope);
@@ -486,12 +500,19 @@ public class Binder {
             return bindErrorStatement(syntax);
         }
 
-        if (initializer != null && !initializer.getType().equals(variableType)) {
-            diagnostics.reportCannotConvert(syntax.getInitializer().getLocation(), initializer.getType(), variableType);
-            return bindErrorStatement(syntax);
+        VariableSymbol variableSymbol = new VariableSymbol(variableName, isReadOnly, variableType);
+
+        if (initializer instanceof BoundInstanceCreationExpression instanceCreationExpression) {
+            variableSymbol.setGenericTypes(instanceCreationExpression.getGenericTypes());
         }
 
-        VariableSymbol variableSymbol = new VariableSymbol(variableName, isReadOnly, variableType);
+        if (initializer != null) {
+            if (!initializer.getType().equals(variableType)) {
+                diagnostics.reportCannotConvert(syntax.getInitializer().getLocation(), initializer.getType(), variableType);
+                return bindErrorStatement(syntax);
+            }
+        }
+
         scope.defineVariable(variableSymbol, initializer);
 
         return new BoundVariableDeclaration(syntax, variableSymbol, initializer);
@@ -695,6 +716,7 @@ public class Binder {
             case INSTANCE_CREATION_EXPRESSION ->
                     bindInstanceCreationExpression((InstanceCreationExpressionSyntax) syntax);
             case ARRAY_LITERAL_EXPRESSION -> bindArrayLiteralExpression((ArrayLiteralExpressionSyntax) syntax);
+            case ARRAY_CREATION_EXPRESSION -> bindArrayCreationExpression((ArrayCreationExpressionSyntax) syntax);
             case MEMBER_ACCESS_EXPRESSION -> bindMemberAccessExpression((MemberAccessExpressionSyntax) syntax);
             case NAME_EXPRESSION -> bindNameExpression((NameExpressionSyntax) syntax);
             case ASSIGNMENT_EXPRESSION -> bindAssignmentExpression((AssignmentExpressionSyntax) syntax);
@@ -703,6 +725,41 @@ public class Binder {
 
             default -> bindErrorExpression(syntax);
         };
+    }
+
+    private BoundExpression bindArrayCreationExpression(ArrayCreationExpressionSyntax syntax) {
+        String typeName = syntax.getQualifiedName().getText();
+
+        List<BoundExpression> sizes = new ArrayList<>();
+        for (ArraySizeClauseSyntax size : syntax.getArraySizeClauses()) {
+            BoundExpression boundSize = bindExpression(size.getSize());
+
+            if (boundSize.getType() != BuiltinTypes.INT) {
+                diagnostics.reportArrayCreationSizeMustBeInt(size.getSize().getLocation());
+                return bindErrorExpression(syntax);
+            }
+
+            sizes.add(boundSize);
+        }
+
+        if (sizes.isEmpty()) {
+            diagnostics.reportArrayCreationMustHaveSize(syntax.getLocation());
+            return bindErrorExpression(syntax);
+        }
+
+        TypeSymbol type = getTypeSymbol(typeName);
+        if (type == null) {
+            diagnostics.reportUndefinedType(syntax.getQualifiedName().getLocation(), typeName);
+            return bindErrorExpression(syntax);
+        }
+
+        int rank = sizes.size();
+        for (int i = 0; i < rank; i++) {
+            type = new ArrayTypeSymbol(type);
+        }
+
+
+        return new BoundArrayCreationExpression(syntax, type, sizes);
     }
 
     private BoundExpression bindArrayLiteralExpression(ArrayLiteralExpressionSyntax syntax) {
@@ -714,8 +771,7 @@ public class Binder {
         }
 
         if (elements.isEmpty()) {
-            diagnostics.reportTodoFeature(syntax.getLocation(), "Empty array literal");
-            return bindErrorExpression(syntax);
+            return new BoundArrayLiteralExpression(syntax, new ArrayTypeSymbol(BuiltinTypes.UNKNOWN), elements);
         }
 
         ArrayTypeSymbol type = new ArrayTypeSymbol(elements.get(0).getType());
@@ -781,6 +837,14 @@ public class Binder {
             return bindErrorExpression(syntax);
         }
 
+        if (field.getType() instanceof ArrayTypeSymbol array) {
+            if (value instanceof BoundArrayLiteralExpression arrayLiteralExpression) {
+                if (arrayLiteralExpression.getType().equals(new ArrayTypeSymbol(BuiltinTypes.UNKNOWN))) {
+                    value = new BoundArrayLiteralExpression(arrayLiteralExpression.getSyntax(), array, arrayLiteralExpression.getElements());
+                }
+            }
+        }
+
         if (!field.getType().equals(value.getType())) {
             diagnostics.reportCannotConvert(syntax.getRight().getLocation(), value.getType(), field.getType());
             return bindErrorExpression(syntax);
@@ -794,14 +858,23 @@ public class Binder {
         return new BoundAssignmentExpression(syntax, target, value);
     }
 
-    private BoundExpression getBoundExpression(AssignmentExpressionSyntax syntax, BoundExpression target, BoundExpression value, VariableSymbol variableSymbol) {
-        if (variableSymbol.isReadonly()) {
-            diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), variableSymbol.getName());
+    private BoundExpression getBoundExpression(AssignmentExpressionSyntax syntax, BoundExpression target, BoundExpression value, VariableSymbol variable) {
+        if (variable.isReadonly()) {
+            diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), variable.getName());
             return bindErrorExpression(syntax);
         }
 
-        if (!variableSymbol.getType().equals(value.getType())) {
-            diagnostics.reportCannotConvert(syntax.getRight().getLocation(), value.getType(), variableSymbol.getType());
+
+        if (variable.getType() instanceof ArrayTypeSymbol array) {
+            if (value instanceof BoundArrayLiteralExpression arrayLiteralExpression) {
+                if (arrayLiteralExpression.getType().equals(new ArrayTypeSymbol(BuiltinTypes.UNKNOWN))) {
+                    value = new BoundArrayLiteralExpression(arrayLiteralExpression.getSyntax(), array, arrayLiteralExpression.getElements());
+                }
+            }
+        }
+
+        if (!variable.getType().equals(value.getType())) {
+            diagnostics.reportCannotConvert(syntax.getRight().getLocation(), value.getType(), variable.getType());
             return bindErrorExpression(syntax);
         }
 
@@ -920,9 +993,7 @@ public class Binder {
         String name = syntax.getIdentifier().getText();
         VariableSymbol variable = scope.getVariable(name);
 
-        if (name.equals("this") && (currentFunctionOrConstructor != null ||
-                currentBinaryOperator != null ||
-                currentUnaryOperator != null)) {
+        if (name.equals("this") && (currentFunctionOrConstructor != null || currentBinaryOperator != null || currentUnaryOperator != null)) {
             return new BoundThisExpression(syntax, currentType);
         }
 
@@ -959,9 +1030,24 @@ public class Binder {
         String typeName = syntax.getQualifiedName().getText();
         TypeSymbol type = programScope.getType(typeName);
 
-        if (type == null) {
-            diagnostics.reportUnknownType(syntax.getQualifiedName().getLocation(), typeName);
-            return bindErrorExpression(syntax);
+        HashMap<String, TypeSymbol> genericTypes = new HashMap<>();
+
+        // get generic types
+        boolean isGeneric = syntax.getGenericParameterClause() != null;
+        if (isGeneric) {
+            int genericCount = syntax.getGenericParameterClause().getGenericParameters().count();
+
+            if (type.getGenericCount() != genericCount) {
+                diagnostics.reportGenericParameterCountMismatch(TextLocation.fromLocations(syntax.getGenericParameterClause().getLessToken().getLocation(), syntax.getGenericParameterClause().getGreaterToken().getLocation()), type, genericCount);
+                return bindErrorExpression(syntax);
+            }
+
+            for (int i = 0; i < genericCount; i++) {
+                String genericName = syntax.getGenericParameterClause().getGenericParameters().get(i).getIdentifier().getText();
+                TypeSymbol genericType = programScope.getType(genericName);
+
+                genericTypes.put(type.getGenericAt(i), genericType);
+            }
         }
 
         List<BoundExpression> arguments = new ArrayList<>();
@@ -975,26 +1061,28 @@ public class Binder {
         }
 
         ConstructorSymbol constructor = type.getConstructor(arguments.size());
-        if (!checkArguments(constructor.getParameters(), arguments, syntax.getArguments())) {
-            return bindErrorExpression(syntax);
-        }
+        // CHECK ARGUMENTS
+        List<ParameterSymbol> parameters = constructor.getParameters();
+        SeparatedSyntaxList<ExpressionSyntax> argumentsSyntax = syntax.getArguments();
 
-        return new BoundInstanceCreationExpression(syntax, type, arguments);
-    }
-
-    private boolean checkArguments(List<ParameterSymbol> parameters, List<BoundExpression> boundArguments, SeparatedSyntaxList<ExpressionSyntax> argumentsSyntaxes) {
         for (int i = 0; i < parameters.size(); i++) {
             ParameterSymbol parameter = parameters.get(i);
-            BoundExpression argument = boundArguments.get(i);
-            ExpressionSyntax argumentSyntax = argumentsSyntaxes.get(i);
+            BoundExpression argument = arguments.get(i);
+            ExpressionSyntax argumentSyntax = argumentsSyntax.get(i);
+
+            boolean isParameterGeneric = genericTypes.containsKey(parameter.getType().getName());
+
+            if (isParameterGeneric) {
+                argument = bindConversion(argument, genericTypes.get(parameter.getType().getName()), parameter.getType());
+            }
 
             if (!parameter.getType().equals(argument.getType())) {
                 diagnostics.reportMismatchingTypes(argumentSyntax.getLocation(), parameter.getType(), argument.getType());
-                return false;
+                return bindErrorExpression(syntax);
             }
         }
 
-        return true;
+        return new BoundInstanceCreationExpression(syntax, type, arguments, genericTypes);
     }
 
     private BoundExpression bindMethodCallExpression(MethodCallExpressionSyntax syntax) {
@@ -1024,12 +1112,32 @@ public class Binder {
                     return bindErrorExpression(syntax);
                 }
 
-                if (!checkArguments(function.getParameters(), boundArguments, syntax.getArguments())) {
-                    diagnostics.reportArgumentMismatch(syntax.getLocation(), function, boundArguments);
-                    return bindErrorExpression(syntax);
+                // CHECK ARGUMENTS
+                List<ParameterSymbol> parameters = function.getParameters();
+                SeparatedSyntaxList<ExpressionSyntax> argumentsSyntax = syntax.getArguments();
+
+                for (int i = 0; i < parameters.size(); i++) {
+                    ParameterSymbol parameter = parameters.get(i);
+                    BoundExpression argument = boundArguments.get(i);
+                    ExpressionSyntax argumentSyntax = argumentsSyntax.get(i);
+
+                    boolean isParameterGeneric = variable.getVariable().isGenericType(parameter.getType().getName());
+
+                    if (isParameterGeneric) {
+                        argument = bindConversion(argument, parameter.getType(), variable.getVariable().getGenericType(parameter.getType().getName()));
+                    }
+
+                    if (!parameter.getType().equals(argument.getType())) {
+                        diagnostics.reportMismatchingTypes(argumentSyntax.getLocation(), parameter.getType(), argument.getType());
+                        return bindErrorExpression(syntax);
+                    }
                 }
 
-                return new BoundMethodCallExpression(syntax, target, function, boundArguments);
+                BoundExpression methodCall = new BoundMethodCallExpression(syntax, target, function, boundArguments);
+                if (variable.getVariable().isGenericType(function.getType())) {
+                    methodCall = bindConversion(methodCall, variable.getVariable().getGenericType(function.getType()), function.getType());
+                }
+                return methodCall;
             }
 
             if (target instanceof BoundTypeExpression type) {
@@ -1042,9 +1150,19 @@ public class Binder {
                     return bindErrorExpression(syntax);
                 }
 
-                if (!checkArguments(function.getParameters(), boundArguments, syntax.getArguments())) {
-                    diagnostics.reportArgumentMismatch(syntax.getLocation(), function, boundArguments);
-                    return bindErrorExpression(syntax);
+                // CHECK ARGUMENTS
+                List<ParameterSymbol> parameters = function.getParameters();
+                SeparatedSyntaxList<ExpressionSyntax> argumentsSyntax = syntax.getArguments();
+
+                for (int i = 0; i < parameters.size(); i++) {
+                    ParameterSymbol parameter = parameters.get(i);
+                    BoundExpression argument = boundArguments.get(i);
+                    ExpressionSyntax argumentSyntax = argumentsSyntax.get(i);
+
+                    if (!parameter.getType().equals(argument.getType())) {
+                        diagnostics.reportMismatchingTypes(argumentSyntax.getLocation(), parameter.getType(), argument.getType());
+                        return bindErrorExpression(syntax);
+                    }
                 }
 
                 return new BoundMethodCallExpression(syntax, target, function, boundArguments);
@@ -1073,6 +1191,10 @@ public class Binder {
 
         diagnostics.reportTodoFeature(syntax.getLocation(), "Method call on other types");
         return bindErrorExpression(syntax);
+    }
+
+    private BoundExpression bindConversion(BoundExpression expression, TypeSymbol fromType, TypeSymbol toType) {
+        return new BoundConversionExpression(expression.getSyntax(), fromType, toType, expression);
     }
 
     private BoundExpression bindConditionalExpression(ConditionalExpressionSyntax syntax) {
@@ -1189,27 +1311,40 @@ public class Binder {
             return bindArrayTypeClause((ArrayTypeClauseSyntax) typeClause);
         }
 
-        if (!programScope.isTypeDeclared(typeName)) {
-            return null;
-        }
+        return getTypeSymbol(typeName);
+    }
 
-        return programScope.getType(typeName);
+    private TypeSymbol getTypeSymbol(String typeName) {
+        TypeSymbol type = null;
+
+        if (programScope.isTypeDeclared(typeName)) {
+            type = programScope.getType(typeName);
+        } else if (currentType != null) {
+            if (currentType.isGeneric(typeName)) {
+                type = TypeSymbol.createGeneric(typeName);
+            }
+        } else if (scope instanceof BoundTypeScope typeScope) {
+            if (typeScope.isGenericDeclared(typeName)) {
+                type = new TypeSymbol(typeName);
+            }
+        }
+        return type;
     }
 
     private TypeSymbol bindArrayTypeClause(ArrayTypeClauseSyntax typeClause) {
-        String elementName = typeClause.getTypeName().getText();
+        String typeName = typeClause.getTypeName().getText();
 
-        if (!programScope.isTypeDeclared(elementName)) {
+        TypeSymbol type = getTypeSymbol(typeName);
+
+        if (type == null) {
             return null;
         }
 
-        TypeSymbol elementType = programScope.getType(elementName);
-
         int rank = typeClause.getRank();
         for (int i = 0; i < rank; i++) {
-            elementType = new ArrayTypeSymbol(elementType);
+            type = new ArrayTypeSymbol(type);
         }
 
-        return elementType;
+        return type;
     }
 }
