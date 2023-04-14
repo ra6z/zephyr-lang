@@ -39,7 +39,7 @@ import "std:console";
 
 type Program {
   pub shared fn main(argc: int, argv: str[]): int {
-    Console.printString("Hello, World!");
+    Console.log("Hello, World!");
     return 0;
   }
 }
@@ -99,6 +99,9 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
 
 ## TODO
 
+- [x] `import` statements
+  - [ ] `as` keyword for renaming imports
+- [x] `export` statements
 - [x] Array Types
   - [x] Array creation syntax (e.g. `[0, 1, 2, 3]`)
   - [x] Array indexing syntax (e.g. `array[0]`)
@@ -139,9 +142,6 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
   - [ ] Error ranges (e.g. for syntax highlighting)
   - [ ] Error suggestions (e.g. "did you mean `=`?")
   - [ ] Error fixes (e.g. "add `;`")
-- [x] `import` statements
-    - [ ] `as` keyword for renaming imports
-- [x] `export` statements
 
 ## Language Server Protocol
 
@@ -180,6 +180,8 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
 ## Standard library
 
 * [std:io](STD-IO.md)
+* [std:console](STD-CONSOLE.md)
+* [std:collections](STD-COLLECTIONS.md)
 * [std:math](STD-MATH.md)
 
 ## License

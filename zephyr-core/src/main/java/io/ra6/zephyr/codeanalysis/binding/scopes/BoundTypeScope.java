@@ -63,7 +63,7 @@ public class BoundTypeScope extends BoundScope {
     }
 
     public boolean isBinaryOperatorDeclared(String operatorName, TypeSymbol other) {
-        return getDeclaredBinaryOperators().stream().anyMatch(f -> f.getName().equals(operatorName) && f.getOtherType() == other);
+        return getDeclaredBinaryOperators().stream().anyMatch(f -> f.getName().equals(operatorName) && f.getOtherType().equals(other));
     }
 
     public void declareBinaryOperator(BinaryOperatorSymbol operator) {
@@ -95,7 +95,7 @@ public class BoundTypeScope extends BoundScope {
     }
 
     public BinaryOperatorSymbol getBinaryOperator(String operatorName, TypeSymbol other) {
-        return binaryOperators.getDeclarations().stream().filter(f -> f.getName().equals(operatorName) && f.getOtherType() == other).findFirst().orElse(null);
+        return binaryOperators.getDeclarations().stream().filter(f -> f.getName().equals(operatorName) && f.getOtherType().equals(other)).findFirst().orElse(null);
     }
 
     public UnaryOperatorSymbol getUnaryOperator(String operatorName) {
@@ -150,7 +150,7 @@ public class BoundTypeScope extends BoundScope {
         return functionDefinitions
                 .keySet()
                 .stream()
-                .filter(f -> f.getName().equals(function.getName()) && f.getParameters().size() == function.getParameters().size() && f.getType() == function.getType() && f.getVisibility() == function.getVisibility() && f.isShared() == function.isShared())
+                .filter(f -> f.getName().equals(function.getName()) && f.getParameters().size() == function.getParameters().size() && f.getType().equals(function.getType()) && f.getVisibility() == function.getVisibility() && f.isShared() == function.isShared())
                 .findFirst()
                 .map(functionDefinitions::get)
                 .orElse(null);
@@ -170,7 +170,7 @@ public class BoundTypeScope extends BoundScope {
         return fieldDefinitions
                 .keySet()
                 .stream()
-                .filter(f -> f.getName().equals(field.getName()) && f.getType() == field.getType() && f.getVisibility() == field.getVisibility() && f.isShared() == field.isShared())
+                .filter(f -> f.getName().equals(field.getName()) && f.getType().equals(field.getType()) && f.getVisibility() == field.getVisibility() && f.isShared() == field.isShared())
                 .findFirst()
                 .map(fieldDefinitions::get)
                 .orElse(null);
@@ -190,7 +190,7 @@ public class BoundTypeScope extends BoundScope {
         return binaryOperators.getDefinitions()
                 .keySet()
                 .stream()
-                .filter(f -> f.getName().equals(binaryOperator.getName()) && f.getOtherType() == binaryOperator.getOtherType())
+                .filter(f -> f.getName().equals(binaryOperator.getName()) && f.getOtherType().equals(binaryOperator.getOtherType()))
                 .findFirst()
                 .map(binaryOperators::getDefinition)
                 .orElse(null);

@@ -3,10 +3,11 @@ package io.ra6.zephyr.compiling;
 import io.ra6.zephyr.codeanalysis.binding.Binder;
 import io.ra6.zephyr.codeanalysis.binding.BoundProgram;
 import io.ra6.zephyr.codeanalysis.syntax.SyntaxTree;
-import io.ra6.zephyr.runtime.EvaluationResult;
-import io.ra6.zephyr.runtime.Evaluator;
 import io.ra6.zephyr.library.ZephyrLibrary;
 import io.ra6.zephyr.library.ZephyrLibraryMetadata;
+import io.ra6.zephyr.runtime.EvaluationResult;
+import io.ra6.zephyr.runtime.Evaluator;
+import io.ra6.zephyr.runtime.RuntimeLogger;
 import io.ra6.zephyr.sourcefile.SourceText;
 import io.ra6.zephyr.writer.DiagnosticWriter;
 import io.ra6.zephyr.writer.SyntaxWriter;
@@ -30,7 +31,10 @@ public class Compiler {
         try {
             SourceText mainSourceText = SourceText.fromFile(inputPath);
             SyntaxTree mainTree = SyntaxTree.parse(mainSourceText);
+
             if (CompilerFlags.isFlagSet(flags, CompilerFlags.PRINT_TREE)) System.out.printTree(mainTree);
+            if (CompilerFlags.isFlagSet(flags, CompilerFlags.VERBOSE)) RuntimeLogger.DEBUG = true;
+
             Binder binder = new Binder(mainTree, standardLibrary);
             BoundProgram boundProgram = binder.bindProgram();
 

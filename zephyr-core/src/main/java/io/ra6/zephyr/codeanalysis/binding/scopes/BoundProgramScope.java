@@ -6,15 +6,19 @@ import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 import lombok.Getter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class BoundProgramScope extends BoundScope {
 
     @Getter
     private final List<ExportSymbol> exports = new ArrayList<>();
-    private final List<TypeSymbol> importedTypes = new ArrayList<>();
+
+    @Getter
+    private final List<BoundProgramScope> importedPrograms = new ArrayList<>();
 
     private final SymbolTable<TypeSymbol, BoundTypeScope> types = new SymbolTable<>();
+    private final HashMap<BoundProgramScope, String> debugImportedProgram = new HashMap<>();
 
     public BoundProgramScope() {
         super(null, BoundScopeKind.PROGRAM);
@@ -25,6 +29,10 @@ public class BoundProgramScope extends BoundScope {
     }
 
     public TypeSymbol getType(String typeName) {
+        boolean isImported = isTypeImported(typeName);
+        if (isImported) {
+            return getImportedType(typeName);
+        }
         return types.getDeclarations().stream().filter(t -> t.getName().equals(typeName)).findFirst().orElse(null);
     }
 
@@ -52,13 +60,28 @@ public class BoundProgramScope extends BoundScope {
         exports.add(export);
     }
 
-    public void importType(TypeSymbol type, BoundTypeScope typeScope) {
-        importedTypes.add(type);
-        types.declare(type);
-        types.define(type, typeScope);
+    public void importProgram(String debugName, BoundProgramScope importedProgram) {
+        importedPrograms.add(importedProgram);
+        debugImportedProgram.put(importedProgram, debugName);
+    }
+
+    public String getDebugImportedProgram(BoundProgramScope importedProgram) {
+        return debugImportedProgram.get(importedProgram);
     }
 
     public boolean isTypeImported(String name) {
-        return importedTypes.stream().anyMatch(t -> t.getName().equals(name));
+        return importedPrograms.stream().anyMatch(p -> p.isTypeDeclared(name));
+    }
+
+    public boolean isTypeImported(TypeSymbol type) {
+        return importedPrograms.stream().anyMatch(p -> p.isTypeDeclared(type.getName()));
+    }
+
+    public TypeSymbol getImportedType(String name) {
+        return importedPrograms.stream().filter(p -> p.isTypeDeclared(name)).findFirst().map(p -> p.getType(name)).orElse(null);
+    }
+
+    public BoundProgramScope getImportedProgram(String name) {
+        return importedPrograms.stream().filter(p -> p.isTypeDeclared(name)).findFirst().orElse(null);
     }
 }

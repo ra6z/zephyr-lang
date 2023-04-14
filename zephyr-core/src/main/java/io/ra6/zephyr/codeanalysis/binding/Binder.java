@@ -697,29 +697,13 @@ public class Binder {
             Binder importedBinder = new Binder(importedSyntaxTree, standardLibrary);
             BoundProgram importedProgram = importedBinder.bindProgram();
 
-            if (importedBinder.diagnostics.hasErrors()) {
+            if (importedProgram.getDiagnostics().hasErrors()) {
                 diagnostics.reportImportError(syntax.getStringToken().getLocation(), "Imported program has errors");
                 diagnostics.addAll(importedBinder.diagnostics);
                 return;
             }
 
-            for (ExportSymbol export : importedProgram.getExports()) {
-                TypeSymbol type = export.getType();
-
-                if (programScope.isTypeDeclared(type.getName())) {
-                    diagnostics.reportImportError(syntax.getStringToken().getLocation(), "Type '" + type.getName() + "' is already declared");
-                    continue;
-                }
-
-                if (programScope.isTypeImported(type.getName())) {
-                    diagnostics.reportImportError(syntax.getStringToken().getLocation(), "Type '" + type.getName() + "' is already imported");
-                    continue;
-                }
-
-                programScope.importType(type, importedProgram.getProgramScope().getTypeScope(type));
-                System.out.println("Imported type: '" + type.getName() + "'");
-            }
-
+            programScope.importProgram((String) syntax.getStringToken().getValue(), importedProgram.getProgramScope());
             System.out.println("Imported program: '" + syntax.getStringToken().getValue() + "'");
         } catch (Exception e) {
             diagnostics.reportImportError(syntax.getStringToken().getLocation(), e.getMessage());
@@ -943,6 +927,9 @@ public class Binder {
                 if (result != null) return result;
                 return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
             }
+
+            diagnostics.reportUndefinedMember(syntax.getMember().getLocation(), typeSymbol.getName(), member);
+            return bindErrorExpression(syntax);
         }
 
         if (target instanceof BoundVariableExpression variable) {
@@ -1028,6 +1015,11 @@ public class Binder {
 
                 if (programScope.isTypeDeclared(name)) {
                     TypeSymbol type = programScope.getType(name);
+                    return new BoundTypeExpression(syntax, type);
+                }
+
+                if (programScope.isTypeImported(name)) {
+                    TypeSymbol type = programScope.getImportedType(name);
                     return new BoundTypeExpression(syntax, type);
                 }
             }
@@ -1351,6 +1343,8 @@ public class Binder {
         TypeSymbol type = null;
 
         if (programScope.isTypeDeclared(typeName)) {
+            type = programScope.getType(typeName);
+        } else if (programScope.isTypeImported(typeName)) {
             type = programScope.getType(typeName);
         } else if (currentType != null) {
             if (currentType.isGeneric(typeName)) {
