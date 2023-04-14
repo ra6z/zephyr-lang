@@ -1,0 +1,12 @@
+nativetype NativeConsole;
+
+type Console {
+    pub shared fnc log(msg: str): void {
+        NativeConsole.logString(msg);
+    }
+    pub shared fnc logInt(msg: int): void {
+        NativeConsole.logString(msg.toString());
+    }
+}
+
+export Console;
