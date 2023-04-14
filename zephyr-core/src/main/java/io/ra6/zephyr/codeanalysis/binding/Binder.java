@@ -3,6 +3,8 @@ package io.ra6.zephyr.codeanalysis.binding;
 import io.ra6.zephyr.Triple;
 import io.ra6.zephyr.Tuple;
 import io.ra6.zephyr.builtin.BuiltinTypes;
+import io.ra6.zephyr.builtin.NativeTypes;
+import io.ra6.zephyr.builtin.natives.NativeType;
 import io.ra6.zephyr.builtin.types.BuiltinType;
 import io.ra6.zephyr.codeanalysis.binding.expressions.*;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundProgramScope;
@@ -72,6 +74,7 @@ public class Binder {
             switch (statement.getKind()) {
                 case IMPORT_DECLARATION -> bindImportDeclaration((ImportDeclarationSyntax) statement);
                 case TYPE_DECLARATION -> declareTypeDeclaration((TypeDeclarationSyntax) statement);
+                case NATIVE_TYPE_DECLARATION -> declareNativeTypeDeclaration((NativeTypeDeclarationSyntax) statement);
                 case EXPORT_DECLARATION -> bindExportDeclaration((ExportDeclarationSyntax) statement);
                 default ->
                         throw new RuntimeException(statement.getLocation() + " Unexpected statement kind: " + statement.getKind());
@@ -89,6 +92,23 @@ public class Binder {
         }
 
         return new BoundProgram(programScope, diagnostics);
+    }
+
+    private void declareNativeTypeDeclaration(NativeTypeDeclarationSyntax syntax) {
+        String name = syntax.getIdentifier().getText();
+
+        if (programScope.isTypeDeclared(name)) {
+            diagnostics.reportTypeAlreadyDeclared(syntax.getIdentifier().getLocation(), name);
+            return;
+        }
+
+        NativeType nativeType = NativeTypes.getNativeType(name);
+
+        nativeType.declareAll();
+        programScope.declareType(nativeType.getTypeSymbol());
+
+        nativeType.defineAll();
+        programScope.defineType(nativeType.getTypeSymbol(), nativeType.getTypeScope());
     }
 
 
@@ -1156,7 +1176,6 @@ public class Binder {
 
             if (target instanceof BoundTypeExpression type) {
                 // static access
-
                 FunctionSymbol function = type.getType().getFunction(member.getMember().getName(), true);
 
                 if (function == null) {

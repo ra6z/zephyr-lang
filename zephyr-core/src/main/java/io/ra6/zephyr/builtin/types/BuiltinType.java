@@ -6,8 +6,10 @@ import io.ra6.zephyr.codeanalysis.symbols.BinaryOperatorSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.FieldSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.UnaryOperatorSymbol;
+import lombok.Getter;
 
 public abstract class BuiltinType {
+
     protected abstract void declareFields();
 
     protected abstract void defineFields();

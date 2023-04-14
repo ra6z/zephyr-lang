@@ -12,8 +12,8 @@ import io.ra6.zephyr.codeanalysis.symbols.*;
 import java.util.List;
 
 public class BuiltinIntType extends BuiltinType {
-    private final BoundTypeScope typeScope = new BoundTypeScope(null, getTypeSymbol());
 
+    private final BoundTypeScope typeScope = new BoundTypeScope(null, BuiltinTypes.INT);
     private final FieldSymbol max = createPubSharedField("max", BuiltinTypes.INT, true);
     private final FieldSymbol min = createPubSharedField("min", BuiltinTypes.INT, true);
     private final FieldSymbol size = createPubSharedField("size", BuiltinTypes.INT, true);

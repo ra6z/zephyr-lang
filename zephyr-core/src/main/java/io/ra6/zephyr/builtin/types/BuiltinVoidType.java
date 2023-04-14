@@ -6,7 +6,7 @@ import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 
 public class BuiltinVoidType extends BuiltinType {
 
-    private final BoundTypeScope typeScope = new BoundTypeScope(null, getTypeSymbol());
+    private final BoundTypeScope typeScope = new BoundTypeScope(null, BuiltinTypes.VOID);
 
     @Override
     protected void declareFields() {

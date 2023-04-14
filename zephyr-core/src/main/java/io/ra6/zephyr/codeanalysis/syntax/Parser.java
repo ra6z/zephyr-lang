@@ -51,12 +51,21 @@ public final class Parser {
         return switch (current().getKind()) {
             case IMPORT_KEYWORD -> parseImportDeclaration();
             case TYPE_KEYWORD -> parseTypeDeclaration();
+            case NATIVE_TYPE_KEYWORD -> parseNativeTypeDeclaration();
             case EXPORT_KEYWORD -> parseExportDeclaration();
             default -> {
                 diagnostics.reportUnexpectedCompilationUnitMember(current().getLocation(), current().getKind(), new SyntaxKind[]{SyntaxKind.IMPORT_KEYWORD, SyntaxKind.TYPE_KEYWORD, SyntaxKind.EXPORT_KEYWORD});
                 yield parseExpressionStatement();
             }
         };
+    }
+
+    private StatementSyntax parseNativeTypeDeclaration() {
+        SyntaxToken nativeTypeKeyword = matchToken(SyntaxKind.NATIVE_TYPE_KEYWORD);
+        SyntaxToken identifierToken = matchToken(SyntaxKind.IDENTIFIER_TOKEN);
+        SyntaxToken semicolonToken = matchToken(SyntaxKind.SEMICOLON_TOKEN);
+
+        return new NativeTypeDeclarationSyntax(syntaxTree, nativeTypeKeyword, identifierToken, semicolonToken);
     }
 
     private StatementSyntax parseTypeDeclaration() {

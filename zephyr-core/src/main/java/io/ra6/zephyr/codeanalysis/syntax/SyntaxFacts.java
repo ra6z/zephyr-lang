@@ -34,6 +34,7 @@ public final class SyntaxFacts {
             put(SyntaxKind.SHARED_KEYWORD, "shared");
 
             put(SyntaxKind.TYPE_KEYWORD, "type");
+            put(SyntaxKind.NATIVE_TYPE_KEYWORD, "nativetype");
             put(SyntaxKind.NEW_KEYWORD, "new");
             put(SyntaxKind.CONSTRUCTOR_KEYWORD, "constructor");
 

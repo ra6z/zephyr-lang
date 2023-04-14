@@ -15,7 +15,7 @@ import java.util.List;
 
 public class BuiltinDoubleType extends BuiltinType {
 
-    private final BoundTypeScope typeScope = new BoundTypeScope(null, getTypeSymbol());
+    private final BoundTypeScope typeScope = new BoundTypeScope(null, BuiltinTypes.DOUBLE);
 
     private final FieldSymbol min = createPubSharedField("min", BuiltinTypes.DOUBLE, true);
     private final FieldSymbol max = createPubSharedField("max", BuiltinTypes.DOUBLE, true);

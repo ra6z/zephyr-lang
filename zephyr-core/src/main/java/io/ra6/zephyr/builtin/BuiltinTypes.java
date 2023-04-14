@@ -16,18 +16,15 @@ public class BuiltinTypes {
     public static final TypeSymbol DOUBLE = new TypeSymbol("double");
     public static final TypeSymbol UNKNOWN = new TypeSymbol("?");
 
-    private static final HashMap<TypeSymbol, BuiltinType> types = new HashMap<>();
+    private static final HashMap<TypeSymbol, BuiltinType> TYPES = new HashMap<>();
     private static final HashMap<Class<?>, TypeSymbol> literalTypeMapping = new HashMap<>();
-    //private static final HashMap<TypeSymbol, TypeSymbol> typeAliases = new HashMap<>();
-
-
 
     public static void register(BuiltinType type) {
-        types.put(type.getTypeSymbol(), type);
+        TYPES.put(type.getTypeSymbol(), type);
     }
 
     public static List<BuiltinType> getBuiltinTypes() {
-        return new ArrayList<>(types.values());
+        return new ArrayList<>(TYPES.values());
     }
 
     static {
@@ -48,7 +45,7 @@ public class BuiltinTypes {
     }
 
     public static boolean isBuiltinType(TypeSymbol type) {
-        return types.containsKey(type);
+        return TYPES.containsKey(type);
     }
 
     public static boolean isValidLiteralType(TypeSymbol type) {

@@ -11,7 +11,7 @@ import java.util.List;
 
 public class BuiltinStringType extends BuiltinType {
 
-    private final BoundTypeScope typeScope = new BoundTypeScope(null, getTypeSymbol());
+    private final BoundTypeScope typeScope = new BoundTypeScope(null, BuiltinTypes.STRING);
 
     private final InternalFunction length = new InternalFunction("length", false, Visibility.PUBLIC, List.of(), BuiltinTypes.INT, args -> {
         String thisValue = (String) args.get("this");
@@ -231,4 +231,5 @@ public class BuiltinStringType extends BuiltinType {
     public BoundTypeScope getTypeScope() {
         return typeScope;
     }
+
 }
