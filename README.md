@@ -129,8 +129,7 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
     - [ ] Newlines
 - [ ] Interfaces (e.g. `interface MyInterface { ... }`)
   - [ ] Types that implement interfaces (e.g. `type MyType implements MyInterface { ... }`)
-- [ ] Enums (e.g. `enum MyEnum { ... }`) 
-- [ ] Lambda expressions (e.g. fnc arg(lambda: (arg: int, arg2: int) => int): int { ... })
+- [ ] Enums (e.g. `enum MyEnum { ... }`)
 - [ ] Asynchronous functions (e.g. `async fnc myFunction() { ... }`)
   - [ ] `await` keyword (e.g. `await myFunction()`)
   - [ ] `async` keyword (e.g. `async myFunction()`)
@@ -142,6 +141,8 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
   - [ ] Error ranges (e.g. for syntax highlighting)
   - [ ] Error suggestions (e.g. "did you mean `=`?")
   - [ ] Error fixes (e.g. "add `;`")
+- [ ] Importing of other file types and parsing them to a Zephyr module
+  - [ ] JSON (e.g. import "file.json");
 
 ## Language Server Protocol
 
@@ -179,10 +180,7 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
 
 ## Standard library
 
-* [std:io](STD-IO.md)
-* [std:console](STD-CONSOLE.md)
-* [std:collections](STD-COLLECTIONS.md)
-* [std:math](STD-MATH.md)
+The documentation for the standard library can be found [here](docs/stdlib.md)
 
 ## License
 
