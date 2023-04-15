@@ -135,6 +135,10 @@ public final class Lexer {
                 currentTokenKind = SyntaxKind.DOT_TOKEN;
                 currentPosition++;
             }
+            case '%' -> {
+                currentTokenKind = SyntaxKind.PERCENT_TOKEN;
+                currentPosition++;
+            }
             case '?' -> {
                 currentTokenKind = SyntaxKind.QUESTION_TOKEN;
                 currentPosition++;

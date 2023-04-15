@@ -98,8 +98,8 @@ public class BuiltinDoubleType extends BuiltinType {
     }
 
     @Override
-    protected void defineBinaryOperators() {
-        for (BinaryOperatorSymbol symbol : typeScope.getDeclaredBinaryOperators()) {
+        protected void defineBinaryOperators() {
+            for (BinaryOperatorSymbol symbol : typeScope.getDeclaredBinaryOperators()) {
             TypeSymbol otherType = symbol.getOtherType();
 
             InternalBinaryOperator ibo = new InternalBinaryOperator(symbol.getName(), symbol.getOtherType(), symbol.getReturnType(), args -> {

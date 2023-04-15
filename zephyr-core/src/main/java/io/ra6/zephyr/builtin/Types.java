@@ -32,6 +32,7 @@ public class Types {
         register(new BuiltinStringType());
         register(new BuiltinVoidType());
         register(new BuiltinDoubleType());
+        register(new BuiltinBoolType());
 
         literalTypeMapping.put(Integer.class, INT);
         literalTypeMapping.put(String.class, STRING);
