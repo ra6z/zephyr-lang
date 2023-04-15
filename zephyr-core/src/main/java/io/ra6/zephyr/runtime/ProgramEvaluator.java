@@ -157,16 +157,16 @@ public class ProgramEvaluator {
         return value;
     }
 
-    private static List<?> createMultiDimensionalList(List<Integer> dimensions, int depth) {
-        List<Object> result = new ArrayList<>();
+    private static Object[] createMultiDimensionalArray(List<Integer> dimensions, int depth) {
+        Object[] result = new Object[dimensions.get(0)];
         if (depth == 1) {
             for (int i = 0; i < dimensions.get(0); i++) {
-                result.add(null);
+                result[i] = null;
             }
         } else {
             for (int i = 0; i < dimensions.get(0); i++) {
                 List<Integer> subDimensions = dimensions.subList(1, dimensions.size());
-                result.add(createMultiDimensionalList(subDimensions, depth - 1));
+                result[i] = createMultiDimensionalArray(subDimensions, depth - 1);
             }
         }
         return result;
@@ -189,7 +189,7 @@ public class ProgramEvaluator {
             dimensions.add(valueInt);
         }
 
-        return createMultiDimensionalList(dimensions, dimensions.size());
+        return createMultiDimensionalArray(dimensions, dimensions.size());
     }
 
     private Object evaluateArrayAccessExpression(BoundArrayAccessExpression expression) {
@@ -218,7 +218,7 @@ public class ProgramEvaluator {
             values.add(evaluateExpression(e));
         }
 
-        return values;
+        return values.toArray();
     }
 
     private Object evaluateInternalFunctionExpression(BoundInternalFunctionExpression expression) {
