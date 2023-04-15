@@ -1,4 +1,7 @@
 # Zephyr
+![GitHub](https://img.shields.io/github/license/ra6z/zephyr)
+![GitHub forks](https://img.shields.io/github/forks/ra6z/zephyr)
+![GitHub Repo stars](https://img.shields.io/github/stars/ra6z/zephyr)
 
 ## Table of Contents
 
