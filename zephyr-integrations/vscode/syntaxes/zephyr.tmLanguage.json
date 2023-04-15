@@ -1,0 +1,828 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Zephyr",
+	"scopeName": "source.zph",
+	"fileTypes": [
+		"zph"
+	],
+	"patterns": [
+		{
+			"include": "#import"
+		},
+		{
+			"include": "#nativetype"
+		},
+		{
+			"include": "#type"
+		},
+		{
+			"include": "#export"
+		}
+	],
+	"repository": {
+		"variables": {
+			"begin": "(?=(var|const))",
+			"end": "(?=\\=|;)",
+			"patterns": [
+				{
+					"match": "\\b(var)\\b\\s+",
+					"name": "keyword.other.variable.zph"
+				},
+				{
+					"match": "\\b(const)\\b\\s+",
+					"name": "keyword.other.constant.zph"
+				},
+				{
+					"match": "([a-zA-Z]\\w*)(:)\\s*",
+					"captures": {
+						"1": {
+							"name": "entity.name.variable.zph"
+						},
+						"2": {
+							"name": "punctuation.separator.variable.zph"
+						}
+					}
+				},
+				{
+					"include": "#all-types"
+				},
+				{
+					"include": "#code"
+				}
+			]
+		},
+		"type-unops": {
+			"begin": "(?=(unop))",
+			"end": "}",
+			"name": "meta.definition.unop.zph",
+			"patterns": [
+				{
+					"match": "\\b(unop)\\b\\s+(\\+|\\-|\\!|\\~)\\s*",
+					"captures": {
+						"1": {
+							"name": "keyword.other.unop.zph"
+						},
+						"2": {
+							"name": "entity.name.unop.operator.zph"
+						}
+					}
+				},
+				{
+					"begin": "\\s*:\\s*",
+					"end": "(?={)",
+					"name": "meta.unop.return-type.zph",
+					"patterns": [
+						{
+							"include": "#all-types"
+						}
+					]
+				},
+				{
+					"contentName": "meta.unop.body.zph",
+					"begin": "{",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.section.unop.begin.bracket.curly.zph"
+						}
+					},
+					"end": "(?=})",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.unop.end.bracket.curly.zph"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#code"
+						}
+					]
+				}
+			]
+		},
+		"type-binops": {
+			"begin": "(?=(binop))",
+			"end": "}",
+			"name": "meta.definition.binop.zph",
+			"patterns": [
+				{
+					"match": "\\b(binop)\\b\\s+(\\+|\\-|\\*|\\/|\\%|\\=\\=|\\!\\=|\\<\\=?|\\>\\=?|\\&\\&?|\\|\\|?|\\^)\\s*",
+					"captures": {
+						"1": {
+							"name": "keyword.other.binop.zph"
+						},
+						"2": {
+							"name": "entity.name.binop.operator.zph"
+						}
+					}
+				},
+				{
+					"contentName": "meta.binop.parameters.zph",
+					"begin": "\\(",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.section.binops.begin.bracket.round.zph"
+						}
+					},
+					"end": "\\)",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.binops.end.bracket.round.zph"
+						}
+					},
+					"patterns": [
+						{
+							"match": "([a-zA-Z]\\w*)(:)\\s*",
+							"captures": {
+								"1": {
+									"name": "variable.parameter.zph"
+								},
+								"2": {
+									"name": "punctuation.separator.variable.zph"
+								}
+							}
+						},
+						{
+							"include": "#all-types"
+						}
+					]
+				},
+				{
+					"begin": "\\s*:\\s*",
+					"end": "(?={)",
+					"name": "meta.binop.return-type.zph",
+					"patterns": [
+						{
+							"include": "#all-types"
+						}
+					]
+				},
+				{
+					"contentName": "meta.binop.body.zph",
+					"begin": "{",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.section.binop.begin.bracket.curly.zph"
+						}
+					},
+					"end": "(?=})",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.binop.end.bracket.curly.zph"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#code"
+						}
+					]
+				}
+			]
+		},
+		"type-constructors": {
+			"begin": "(?=(constructor))",
+			"end": "}",
+			"name": "meta.definition.constructor.zph",
+			"patterns": [
+				{
+					"match": "\\b(constructor)\\b\\s*",
+					"name": "keyword.other.constructor.zph"
+				},
+				{
+					"contentName": "meta.constructor.parameters.zph",
+					"begin": "\\(",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.section.constructor.begin.bracket.round.zph"
+						}
+					},
+					"end": "\\)",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.constructor.end.bracket.round.zph"
+						}
+					},
+					"patterns": [
+						{
+							"match": "([a-zA-Z]\\w*)(:)\\s*",
+							"captures": {
+								"1": {
+									"name": "variable.parameter.zph"
+								},
+								"2": {
+									"name": "punctuation.separator.variable.zph"
+								}
+							}
+						},
+						{
+							"include": "#all-types"
+						}
+					]
+				},
+				{
+					"contentName": "meta.constructor.body.zph",
+					"begin": "{",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.section.constructor.begin.bracket.curly.zph"
+						}
+					},
+					"end": "(?=})",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.constructor.end.bracket.curly.zph"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#code"
+						}
+					]
+				}
+			]
+		},
+		"type-fields": {
+			"begin": "(?=((pub|prv)\\s+)?(shared\\s+)?((var|const)\\s+))",
+			"end": "(?=\\=|;)",
+			"name": "meta.definition.field.zph",
+			"patterns": [
+				{
+					"include": "#storage-modifiers"
+				},
+				{
+					"include": "#variables"
+				}
+			]
+		},
+		"type-functions": {
+			"begin": "(?=((pub|prv)\\s+)?(shared\\s+)?(fnc\\s+))",
+			"end": "}",
+			"name": "meta.definition.function.zph",
+			"patterns": [
+				{
+					"include": "#storage-modifiers"
+				},
+				{
+					"match": "(fnc)\\s+([\\w]+)",
+					"captures": {
+						"1": {
+							"name": "keyword.other.function.zph"
+						},
+						"2": {
+							"name": "entity.name.function.zph"
+						}
+					}
+				},
+				{
+					"contentName": "meta.function.parameters.zph",
+					"begin": "\\(",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.section.function.begin.bracket.round.zph"
+						}
+					},
+					"end": "\\)",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.function.end.bracket.round.zph"
+						}
+					},
+					"patterns": [
+						{
+							"match": ",",
+							"name": "punctuation.separator.function.zph"
+						},
+						{
+							"match": "([a-zA-Z]\\w*)(:)\\s*",
+							"captures": {
+								"1": {
+									"name": "variable.parameter.zph"
+								},
+								"2": {
+									"name": "punctuation.separator.variable.zph"
+								}
+							}
+						},
+						{
+							"include": "#all-types"
+						}
+					]
+				},
+				{
+					"begin": "\\s*:\\s*",
+					"end": "(?={)",
+					"name": "meta.function.return-type.zph",
+					"patterns": [
+						{
+							"include": "#all-types"
+						}
+					]
+				},
+				{
+					"contentName": "meta.function.body.zph",
+					"begin": "{",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.section.function.begin.bracket.curly.zph"
+						}
+					},
+					"end": "(?=})",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.function.end.bracket.curly.zph"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#code"
+						}
+					]
+				}
+			]
+		},
+		"storage-modifiers": {
+			"comment": "TODO",
+			"patterns": [
+				{
+					"match": "\\b(pub|prv)\\b",
+					"name": "storage.modifier.access.zph"
+				},
+				{
+					"match": "\\b(shared)\\b",
+					"name": "storage.modifier.shared.zph"
+				}
+			]
+		},
+		"type-body": {
+			"patterns": [
+				{
+					"include": "#generics"
+				},
+				{
+					"include": "#type-fields"
+				},
+				{
+					"include": "#type-constructors"
+				},
+				{
+					"include": "#type-functions"
+				},
+				{
+					"include": "#type-binops"
+				},
+				{
+					"include": "#type-unops"
+				},
+				{
+					"include": "#code"
+				}
+			]
+		},
+		"nativetype": {
+			"match": "\\b(nativetype)\\b\\s+([a-zA-Z]\\w*)\\;",
+			"captures": {
+				"1": {
+					"name": "keyword.other.nativetype.zph"
+				},
+				"2": {
+					"name": "entity.name.type.nativetype.zph"
+				}
+			}
+		},
+		"type": {
+			"begin": "(?=type\\s+[\\w]+)",
+			"end": "}",
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.section.type.end.bracket.curly.zph"
+				}
+			},
+			"name": "meta.type.zph",
+			"patterns": [
+				{
+					"include": "#generics"
+				},
+				{
+					"match": "(type)\\s+([\\w]+)",
+					"captures": {
+						"1": {
+							"name": "keyword.other.type.zph"
+						},
+						"2": {
+							"name": "entity.name.type.zph"
+						}
+					}
+				},
+				{
+					"begin": "{",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.section.type.begin.bracket.curly.zph"
+						}
+					},
+					"end": "(?=})",
+					"patterns": [
+						{
+							"include": "#type-body"
+						}
+					]
+				}
+			]
+		},
+		"keywords": {
+			"patterns": [
+				{
+					"match": "\\?|:",
+					"name": "keyword.control.ternary.zph"
+				},
+				{
+					"match": "\\b(return|break|continue|while|if|else)\\b",
+					"name": "keyword.control.zph"
+				},
+				{
+					"match": "(<<|>>|~|\\^)",
+					"name": "keyword.operator.bitwise.zph"
+				},
+				{
+					"match": "(==|!=|<=|>=|<>|<|>)",
+					"name": "keyword.operator.comparison.zph"
+				},
+				{
+					"match": "(=)",
+					"name": "keyword.operator.assignment.zph"
+				},
+				{
+					"match": "(\\-|\\+|\\*|\\/|%)",
+					"name": "keyword.operator.arithmetic.zph"
+				},
+				{
+					"match": "(!|&&|\\|\\|)",
+					"name": "keyword.operator.logical.zph"
+				},
+				{
+					"match": "(\\||&)",
+					"name": "keyword.operator.bitwise.zph"
+				}
+			]
+		},
+		"constants-and-special-vars": {
+			"patterns": [
+				{
+					"match": "\\b(true|false)\\b",
+					"name": "constant.language.zph"
+				},
+				{
+					"match": "\\bthis\\b",
+					"name": "variable.language.this.zph"
+				}
+			]
+		},
+		"numbers": {
+			"patterns": [
+				{
+					"match": "(?x)\n\\b(?<!\\$)\n0(x|X)\n(\n  (?<!\\.)[0-9a-fA-F]([0-9a-fA-F_]*[0-9a-fA-F])?[Ll]?(?!\\.)\n  |\n  (\n    [0-9a-fA-F]([0-9a-fA-F_]*[0-9a-fA-F])?\\.?\n    |\n    ([0-9a-fA-F]([0-9a-fA-F_]*[0-9a-fA-F])?)?\\.[0-9a-fA-F]([0-9a-fA-F_]*[0-9a-fA-F])?\n  )\n  [Pp][+-]?[0-9]([0-9_]*[0-9])?[FfDd]?\n)\n\\b(?!\\$)",
+					"name": "constant.numeric.hex.zph"
+				},
+				{
+					"match": "\\b(?<!\\$)0(b|B)[01]([01_]*[01])?[Ll]?\\b(?!\\$)",
+					"name": "constant.numeric.binary.zph"
+				},
+				{
+					"match": "\\b(?<!\\$)0[0-7]([0-7_]*[0-7])?[Ll]?\\b(?!\\$)",
+					"name": "constant.numeric.octal.zph"
+				},
+				{
+					"match": "(?x)\n(?<!\\$)\n(\n  \\b[0-9]([0-9_]*[0-9])?\\.\\B(?!\\.)\n  |\n  \\b[0-9]([0-9_]*[0-9])?\\.([Ee][+-]?[0-9]([0-9_]*[0-9])?)[FfDd]?\\b\n  |\n  \\b[0-9]([0-9_]*[0-9])?\\.([Ee][+-]?[0-9]([0-9_]*[0-9])?)?[FfDd]\\b\n  |\n  \\b[0-9]([0-9_]*[0-9])?\\.([0-9]([0-9_]*[0-9])?)([Ee][+-]?[0-9]([0-9_]*[0-9])?)?[FfDd]?\\b\n  |\n  (?<!\\.)\\B\\.[0-9]([0-9_]*[0-9])?([Ee][+-]?[0-9]([0-9_]*[0-9])?)?[FfDd]?\\b\n  |\n  \\b[0-9]([0-9_]*[0-9])?([Ee][+-]?[0-9]([0-9_]*[0-9])?)[FfDd]?\\b\n  |\n  \\b[0-9]([0-9_]*[0-9])?([Ee][+-]?[0-9]([0-9_]*[0-9])?)?[FfDd]\\b\n  |\n  \\b(0|[1-9]([0-9_]*[0-9])?)(?!\\.)[Ll]?\\b\n)\n(?!\\$)",
+					"name": "constant.numeric.decimal.zph"
+				}
+			]
+		},
+		"strings": {
+			"patterns": [
+				{
+					"begin": "\"",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.definition.string.begin.zph"
+						}
+					},
+					"end": "\"",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.definition.string.end.zph"
+						}
+					},
+					"name": "string.quoted.double.zph",
+					"patterns": [
+						{
+							"match": "\\\\.",
+							"name": "constant.character.escape.zph"
+						}
+					]
+				}
+			]
+		},
+		"all-types": {
+			"patterns": [
+				{
+					"include": "#primitive-arrays"
+				},
+				{
+					"include": "#primitive-types"
+				},
+				{
+					"include": "#object-types"
+				}
+			]
+		},
+		"primitive-arrays": {
+			"begin": "\\b(void|bool|int|str|double)\\b\\s*(?=\\[)",
+			"name": "meta.type.array.primitive.zph",
+			"beginCaptures": {
+				"1": {
+					"name": "storage.type.primitive.array.zph"
+				}
+			},
+			"end": "(?<=\\])(?!\\[)",
+			"patterns": [
+				{
+					"include": "#parens"
+				}
+			]
+		},
+		"primitive-types": {
+			"match": "\\b(void|bool|int|str|double)\\b",
+			"name": "storage.type.primitive.zph"
+		},
+		"object-types": {
+			"patterns": [
+				{
+					"include": "#generics"
+				},
+				{
+					"begin": "\\b([a-zA-Z]\\w*)\\s*(?=\\[)",
+					"name": "meta.type.array.zph",
+					"beginCaptures": {
+						"1": {
+							"patterns": [
+								{
+									"match": "[a-zA-Z]\\w*",
+									"name": "storage.type.array.zph"
+								}
+							]
+						}
+					},
+					"end": "(?!\\s*\\[)",
+					"patterns": [
+						{
+							"include": "#parens"
+						}
+					]
+				},
+				{
+					"match": "\\b([a-zA-Z]\\w*)\\s*(?=<)",
+					"captures": {
+						"1": {
+							"patterns": [
+								{
+									"match": "[a-zA-Z]\\w*",
+									"name": "storage.type.zph"
+								}
+							]
+						}
+					}
+				},
+				{
+					"match": "\\b([a-zA-Z]\\w*)\\b",
+					"captures": {
+						"1": {
+							"name": "storage.type.zph"
+						}
+					}
+				}
+			]
+		},
+		"code": {
+			"patterns": [
+				{
+					"include": "#parens"
+				},
+				{
+					"include": "#constants-and-special-vars"
+				},
+				{
+					"include": "#numbers"
+				},
+				{
+					"include": "#new-instance-or-array"
+				},
+				{
+					"include": "#keywords"
+				},
+				{
+					"include": "#function-call"
+				},
+				{
+					"include": "#variables"
+				},
+				{
+					"include": "#objects"
+				},
+				{
+					"include": "#strings"
+				},
+				{
+					"include": "#all-types"
+				},
+				{
+					"match": ",",
+					"name": "punctuation.separator.delimiter.java"
+				},
+				{
+					"match": ";",
+					"name": "punctuation.terminator.zph"
+				}
+			]
+		},
+		"objects": {
+			"comment": "",
+			"match": "(?<=\\b[a-zA-Z_$][\\w$]*\\.)[a-zA-Z_$][\\w$]*(?=\\s*\\.|\\b)|(?<![\\w$])[a-zA-Z_$][\\w$]*(?=\\s*(\\.|\\b))(?![\\w$])",
+			"name": "variable.other.object.zph"
+		},
+		"new-instance-or-array": {
+			"name": "meta.new-instance-or-array.zph",
+			"begin": "\\b(new)\\b\\s+([a-zA-Z]\\w*)",
+			"beginCaptures": {
+				"1": {
+					"name": "keyword.control.new.zph"
+				},
+				"2": {
+					"name": "entity.name.type.instance.zph"
+				}
+			},
+			"end": "(?=\\(|\\[)",
+			"patterns": [
+				{
+					"include": "#generics"
+				}
+			]
+		},
+		"function-call": {
+			"name": "meta.function-call.zph",
+			"begin": "\\.\\s*([a-zA-Z]\\w*\\()",
+			"beginCaptures": {
+				"1": {
+					"name": "entity.name.function.zph"
+				}
+			},
+			"end": "\\)",
+			"patterns": [
+				{
+					"include": "#code"
+				}
+			]
+		},
+		"parens": {
+			"patterns": [
+				{
+					"begin": "\\(",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.section.parens.begin.zph"
+						}
+					},
+					"end": "\\)",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.parens.end.zph"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#code"
+						}
+					]
+				},
+				{
+					"begin": "\\[",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.section.brackets.begin.zph"
+						}
+					},
+					"end": "\\]",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.brackets.end.zph"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#code"
+						}
+					]
+				},
+				{
+					"begin": "\\{",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.section.braces.begin.zph"
+						}
+					},
+					"end": "\\}",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.section.braces.end.zph"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#code"
+						}
+					]
+				}
+			]
+		},
+		"generics": {
+			"begin": "<",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.bracket.angle.zph"
+				}
+			},
+			"end": ">",
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.bracket.angle.zph"
+				}
+			},
+			"name": "meta.generic.zph",
+			"patterns": [
+				{
+					"match": "([a-zA-Z][\\w]*)(?=\\s*<)",
+					"name": "storage.type.zph"
+				},
+				{
+					"match": "[a-zA-Z][\\w]*",
+					"name": "storage.type.generic.zph"
+				},
+				{
+					"match": ",",
+					"name": "punctuation.separator.comma.zph"
+				},
+				{
+					"include": "#generics"
+				}
+			]
+		},
+		"export": {
+			"name": "meta.export.zph",
+			"begin": "\\b(export)\\b\\s*",
+			"beginCaptures": {
+				"1": {
+					"name": "keyword.other.export.zph"
+				}
+			},
+			"end": "\\s*(;)",
+			"endCaptures": {
+				"1": {
+					"name": "punctuation.terminator.zph"
+				}
+			},
+			"patterns": [
+				{
+					"match": "\\b(\\w+)\\b",
+					"name": "entity.name.type.export.zph"
+				},
+				{
+					"match": ".*(?=;)",
+					"name": "invalid.illegal.export.zph"
+				}
+			]
+		},
+		"import": {
+			"name": "meta.import.zph",
+			"begin": "\\b(import)\\b\\s*",
+			"beginCaptures": {
+				"1": {
+					"name": "keyword.other.import.zph"
+				}
+			},
+			"end": "\\s*(;)",
+			"endCaptures": {
+				"1": {
+					"name": "punctuation.terminator.zph"
+				}
+			},
+			"patterns": [
+				{
+					"match": "\"([\\w\\/\\:]*)\"",
+					"name": "string.quoted.double.import.zph"
+				},
+				{
+					"match": ".*(?=;)",
+					"name": "invalid.illegal.import.zph"
+				}
+			]
+		}
+	}
+}

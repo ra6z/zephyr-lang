@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "stdlib"
+		},
+		{
+			"path": "docs"
+		},
+		{
+			"path": "examples"
+		},
+		{
+			"path": "zephyr-integrations/vscode"
+		}
+	],
+	"settings": {}
+}

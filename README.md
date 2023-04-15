@@ -164,14 +164,12 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
 - [ ] Code formatting
 - [ ] Code documentation
 - [ ] Code highlighting
-  - [ ] Syntax highlighting
+  - [x] Syntax highlighting
     - [x] Keywords
-    - [ ] Identifiers
-    - [ ] Literals
-    - [ ] Operators
-    - [ ] Punctuation
-    - [ ] Comments
-  - [ ] Semantic highlighting
+    - [x] Identifiers
+    - [x] Literals
+    - [x] Operators
+    - [x] Punctuation
   - [ ] Error highlighting
   - [ ] Warning highlighting
   - [ ] Info highlighting

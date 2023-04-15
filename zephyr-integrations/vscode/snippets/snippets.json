@@ -1,0 +1,42 @@
+{
+    "Create new type": {
+        "prefix": "newtype",
+        "body": [
+            "type ${1:TypeName} {",
+            "\t$2",
+            "}",
+            "export ${1:TypeName};"
+        ],
+        "description": "Generates a new type"
+    },
+    "Create new nativetype": {
+        "prefix": "newnative",
+        "body": [
+            "nativetype ${1:TypeName};"
+        ],
+        "description": "Generates a new native type"
+    },
+    "Import type from std": {
+        "prefix": "importstd",
+        "body": [
+            "import \"std:$1\";"
+        ],
+        "description": "Imports a type from the standard library"
+    },
+    "Public shared": {
+        "prefix": "pubs",
+        "body": [
+            "pub shared $1"
+        ],
+        "description": "Creates a public shared prefix"
+    },
+    "Generate Constructor": {
+        "prefix": "ctr",
+        "body": [
+            "constructor($1) {",
+            "\t$2",
+            "}"
+        ],
+        "description": "Generates a constructor"
+    }
+}
