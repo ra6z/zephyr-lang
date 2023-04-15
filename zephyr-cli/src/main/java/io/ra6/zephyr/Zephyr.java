@@ -14,6 +14,7 @@ import java.util.concurrent.Callable;
 public class Zephyr implements Callable<Void> {
     @Override
     public Void call() throws Exception {
+        CommandLine.usage(this, System.out);
         return null;
     }
 }

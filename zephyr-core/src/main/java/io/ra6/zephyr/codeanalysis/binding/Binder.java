@@ -686,7 +686,6 @@ public class Binder {
     }
 
     private void bindImportDeclaration(ImportDeclarationSyntax syntax) {
-        System.out.println("Importing: '" + syntax.getStringToken().getValue() + "'");
         try {
             String pathToImport = (String) syntax.getStringToken().getValue();
             boolean isStd = pathToImport.startsWith("std:");
@@ -704,7 +703,6 @@ public class Binder {
             }
 
             programScope.importProgram((String) syntax.getStringToken().getValue(), importedProgram.getProgramScope());
-            System.out.println("Imported program: '" + syntax.getStringToken().getValue() + "'");
         } catch (Exception e) {
             diagnostics.reportImportError(syntax.getStringToken().getLocation(), e.getMessage());
         }
