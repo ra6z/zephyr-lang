@@ -72,6 +72,7 @@ The `export` statement exports the `Program` type. The `Program` type is exporte
   - [ ] WASM
   - [ ] JIT
 - [ ] Compiler
+- [ ] Self-hosting
 - [ ] Standard library
   - [ ] `std:io`
   - [ ] `std:math`

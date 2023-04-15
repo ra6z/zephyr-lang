@@ -196,7 +196,7 @@ public class ProgramEvaluator {
         Object array = evaluateExpression(expression.getTarget());
         Object index = evaluateExpression(expression.getIndex());
 
-        if (!(array instanceof List)) {
+        if (!(array instanceof Object[])) {
             throw new RuntimeException("Cannot access array element of non-array type");
         }
 
@@ -204,11 +204,11 @@ public class ProgramEvaluator {
             throw new RuntimeException("Array index must be an integer");
         }
 
-        if ((Integer) index >= ((List<?>) array).size()) {
+        if ((Integer) index >= ((Object[]) array).length) {
             throw new RuntimeException("Array index out of bounds");
         }
 
-        return ((List<?>) array).get((Integer) index);
+        return ((Object[]) array)[(Integer) index];
     }
 
     private Object evaluateArrayLiteralExpression(BoundArrayLiteralExpression expression) {
@@ -324,7 +324,7 @@ public class ProgramEvaluator {
             Object index = evaluateExpression(arrayAccessExpression.getIndex());
             Object value = evaluateExpression(expression.getExpression());
 
-            if (!(array instanceof List)) {
+            if (!(array instanceof Object[])) {
                 throw new RuntimeException("Cannot access array element of non-array type");
             }
 
@@ -333,12 +333,11 @@ public class ProgramEvaluator {
             }
 
             // check index out of bounds
-            if ((Integer) index >= ((List<?>) array).size()) {
+            if ((Integer) index >= ((Object[]) array).length) {
                 throw new RuntimeException("Array index out of bounds");
             }
 
-            //noinspection unchecked
-            ((List<Object>) array).set((Integer) index, value);
+            ((Object[]) array)[(Integer) index] = value;
             return value;
         }
 
@@ -423,11 +422,11 @@ public class ProgramEvaluator {
             return evaluateBuiltinFunctionCall(callee, Types.getLiteralType(calleeValue.getClass()), expression.getFunction(), expression.getArguments());
         }
 
-        if (calleeValue instanceof ArrayList<?>) {
+        if (calleeValue instanceof Object[]) {
             FunctionSymbol function = expression.getFunction();
 
             if (function.getName().equals("copy")) {
-                return new ArrayList<>((List<?>) calleeValue);
+                return ((Object[]) calleeValue).clone();
             }
         }
 
