@@ -4,7 +4,9 @@ import io.ra6.zephyr.builtin.InternalBinaryOperator;
 import io.ra6.zephyr.builtin.InternalFunction;
 import io.ra6.zephyr.builtin.InternalUnaryOperator;
 import io.ra6.zephyr.builtin.Types;
-import io.ra6.zephyr.codeanalysis.binding.*;
+import io.ra6.zephyr.codeanalysis.binding.BoundExpression;
+import io.ra6.zephyr.codeanalysis.binding.BoundLabel;
+import io.ra6.zephyr.codeanalysis.binding.BoundStatement;
 import io.ra6.zephyr.codeanalysis.binding.expressions.*;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundProgramScope;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
@@ -122,6 +124,7 @@ public class ProgramEvaluator {
         if (expression instanceof BoundLiteralExpression literal) {
             return evaluateLiteralExpression(literal);
         }
+
         return switch (expression.getKind()) {
             case VARIABLE_EXPRESSION -> evaluateVariableExpression((BoundVariableExpression) expression);
             case ASSIGNMENT_EXPRESSION -> evaluateAssignmentExpression((BoundAssignmentExpression) expression);
@@ -345,7 +348,9 @@ public class ProgramEvaluator {
     }
 
     private Object evaluateVariableExpression(BoundVariableExpression expression) {
-        return locals.peek().keySet().stream().filter(s -> s.getName().equals(expression.getVariable().getName()) && s.isReadonly() == expression.getVariable().isReadonly() && s.getType().equals(expression.getVariable().getType())).findFirst().map(locals.peek()::get).orElseThrow(() -> new RuntimeException("Variable " + expression.getVariable().getName() + " not found"));
+        return locals.peek().keySet().stream()
+                .filter(s -> s.getName().equals(expression.getVariable().getName()) && s.isReadonly() == expression.getVariable().isReadonly() && s.getType().equals(expression.getVariable().getType()))
+                .findFirst().map(locals.peek()::get).orElseThrow(() -> new RuntimeException("Variable " + expression.getVariable().getName() + " not found"));
     }
 
     private Object evaluateThisExpression(BoundThisExpression expression) {
@@ -399,7 +404,7 @@ public class ProgramEvaluator {
 
             // check if variable type is builtin type
             if (Types.isBuiltinType(variable.getType())) {
-                return evaluateBuiltinFunctionCall(callee, variable.getType(), expression.getFunction(), expression.getArguments());
+                return evaluateBuiltinFunctionCall(callee, variable.getType(), expression.getFunction(), expression.getArguments(), null);
             }
         }
 
@@ -414,12 +419,12 @@ public class ProgramEvaluator {
 
         if (callee instanceof BoundLiteralExpression literalExpression) {
             if (Types.isValidLiteralType(literalExpression.getType())) {
-                return evaluateBuiltinFunctionCall(callee, literalExpression.getType(), expression.getFunction(), expression.getArguments());
+                return evaluateBuiltinFunctionCall(callee, literalExpression.getType(), expression.getFunction(), expression.getArguments(), calleeValue);
             }
         }
 
         if (Types.isValidLiteralType(calleeValue.getClass())) {
-            return evaluateBuiltinFunctionCall(callee, Types.getLiteralType(calleeValue.getClass()), expression.getFunction(), expression.getArguments());
+            return evaluateBuiltinFunctionCall(callee, Types.getLiteralType(calleeValue.getClass()), expression.getFunction(), expression.getArguments(), calleeValue);
         }
 
         if (calleeValue instanceof Object[]) {
@@ -428,18 +433,20 @@ public class ProgramEvaluator {
             if (function.getName().equals("copy")) {
                 return ((Object[]) calleeValue).clone();
             }
+
+            throw new RuntimeException("Unexpected function call on array: " + function.getName());
         }
 
         throw new RuntimeException("Unexpected callee type: " + calleeValue.getClass().getSimpleName());
     }
 
-    private Object evaluateBuiltinFunctionCall(BoundExpression callee, TypeSymbol type, FunctionSymbol function, List<BoundExpression> arguments) {
+    private Object evaluateBuiltinFunctionCall(BoundExpression callee, TypeSymbol type, FunctionSymbol function, List<BoundExpression> arguments, Object calleeValue) {
         List<Object> evaluatedArguments = new ArrayList<>();
         for (BoundExpression argument : arguments) {
             evaluatedArguments.add(evaluateExpression(argument));
         }
 
-        Object calleeValue = evaluateExpression(callee);
+        if (calleeValue == null) calleeValue = evaluateExpression(callee);
 
         locals.push(new VariableTable("builtin-function (" + type.getName() + "." + function.getName() + ")"));
         assign(new VariableSymbol("this", true, type), calleeValue);
@@ -598,7 +605,7 @@ public class ProgramEvaluator {
         if (expression.getTarget().getType() instanceof ArrayTypeSymbol) {
             if (expression.getMember() instanceof FieldSymbol field) {
                 if (field.getName().equals("length")) {
-                    return ((List<?>) instanceValue).size();
+                    return ((Object[]) instanceValue).length;
                 }
             }
         }
