@@ -23,6 +23,8 @@ import io.ra6.zephyr.sourcefile.SourceText;
 import io.ra6.zephyr.sourcefile.TextLocation;
 import lombok.Getter;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 // TODO: When importing a file from a library, that has already been imported somewhere else, we should not re-parse/bind it.
@@ -240,9 +242,7 @@ public class Binder {
         FunctionSymbol toStringFunction = typeScope.getFunction("toString");
 
         if (typeScope.getFunctionScope(toStringFunction) == null) {
-            BoundBlockStatement body = BoundNodeFactory.createBlockStatement(null,
-                    new BoundReturnStatement(null, new BoundLiteralExpression(null, type.getName(), Types.STRING))
-            );
+            BoundBlockStatement body = BoundNodeFactory.createBlockStatement(null, new BoundReturnStatement(null, new BoundLiteralExpression(null, type.getName(), Types.STRING)));
             typeScope.defineFunction(toStringFunction, body);
         }
     }
@@ -285,8 +285,7 @@ public class Binder {
         if (typeScope.isFieldOrFunctionDeclared(fieldName)) {
             if (typeScope.isField(fieldName))
                 diagnostics.reportFieldAlreadyDeclared(syntax.getIdentifier().getLocation(), fieldName);
-            else
-                diagnostics.reportFunctionDeclaredButFieldExpected(syntax.getIdentifier().getLocation(), fieldName);
+            else diagnostics.reportFunctionDeclaredButFieldExpected(syntax.getIdentifier().getLocation(), fieldName);
             return;
         }
 
@@ -352,8 +351,7 @@ public class Binder {
         if (typeScope.isFieldOrFunctionDeclared(functionName)) {
             if (typeScope.isFunction(functionName))
                 diagnostics.reportFunctionAlreadyDeclared(syntax.getIdentifier().getLocation(), functionName);
-            else
-                diagnostics.reportFieldDeclaredButFunctionExpected(syntax.getIdentifier().getLocation(), functionName);
+            else diagnostics.reportFieldDeclaredButFunctionExpected(syntax.getIdentifier().getLocation(), functionName);
             return;
         }
 
@@ -748,6 +746,30 @@ public class Binder {
             String pathToImport = (String) syntax.getStringToken().getValue();
             boolean isStd = pathToImport.startsWith("std:");
             String path = isStd ? standardLibrary.getLibraryPath(pathToImport) : pathToImport;
+
+            // convert relative path to absolute path
+            if (!isStd) {
+                path = Paths.get(syntaxTree.getSourceText().getFilePath()).getParent().resolve(path).toString();
+            }
+
+            if (!isStd) {
+                // TODO: Support importing non-Zephyr files
+                if (path.endsWith(".zph")) {
+                    diagnostics.reportImportError(syntax.getStringToken().getLocation(), "Importing non-Zephyr files is not supported yet");
+                    path = path.substring(0, path.length() - 4);
+                } else{
+                    path = path + ".zph";
+                }
+            }
+
+            if (!Files.exists(Paths.get(path))) {
+                if (Files.exists(Paths.get(path.substring(0, path.length() - 4)))) {
+                    diagnostics.reportImportError(syntax.getStringToken().getLocation(), "Importing non-Zephyr files is not supported yet");
+                } else {
+                    diagnostics.reportImportError(syntax.getStringToken().getLocation(), "File %s does not exist".formatted(path));
+                }
+                return;
+            }
 
             SourceText importedSourceText = SourceText.fromFile(path);
             SyntaxTree importedSyntaxTree = SyntaxTree.parse(importedSourceText);
@@ -1327,7 +1349,6 @@ public class Binder {
         TypeSymbol rightType = right.getType();
 
         if (leftType == Types.ERROR || rightType == Types.ERROR) {
-            diagnostics.reportTodoFeature(syntax.getLocation(), "Binary operator on error expression");
             return bindErrorExpression(syntax);
         }
 
