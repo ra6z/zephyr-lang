@@ -29,7 +29,7 @@ public class BuiltinDoubleType extends BuiltinType {
         return (double) otherValue;
     });
 
-    private final InternalFunction toString = new InternalFunction("toString", false, Visibility.PUBLIC, List.of(new ParameterSymbol(PARAM_OTHER, Types.DOUBLE)), Types.STRING, args -> {
+    private final InternalFunction toString = new InternalFunction("toString", false, Visibility.PUBLIC, List.of(), Types.STRING, args -> {
         double otherValue = (double) args.get(PARAM_THIS);
         return Double.toString(otherValue);
     });

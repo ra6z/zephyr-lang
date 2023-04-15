@@ -126,6 +126,8 @@ public class BuiltinStringType extends BuiltinType {
         return str.substring(0, i + 1);
     });
 
+    private final InternalFunction toString = new InternalFunction("toString", false, Visibility.PUBLIC, List.of(), Types.STRING, args -> args.get(PARAM_THIS));
+
     @Override
     protected void declareFields() {
 
@@ -165,6 +167,7 @@ public class BuiltinStringType extends BuiltinType {
         typeScope.declareFunction(trimLeft);
         typeScope.declareFunction(trimRight);
         typeScope.declareFunction(replace);
+        typeScope.declareFunction(toString);
     }
 
     @Override
@@ -186,6 +189,7 @@ public class BuiltinStringType extends BuiltinType {
         typeScope.defineFunction(trimLeft);
         typeScope.defineFunction(trimRight);
         typeScope.defineFunction(replace);
+        typeScope.defineFunction(toString);
     }
 
     @Override
@@ -201,8 +205,6 @@ public class BuiltinStringType extends BuiltinType {
         typeScope.declareBinaryOperator(createBinaryOperator("<=", Types.STRING, Types.BOOL));
         typeScope.declareBinaryOperator(createBinaryOperator(">", Types.STRING, Types.BOOL));
         typeScope.declareBinaryOperator(createBinaryOperator(">=", Types.STRING, Types.BOOL));
-
-
     }
 
     @Override

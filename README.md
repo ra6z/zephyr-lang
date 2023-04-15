@@ -22,18 +22,6 @@
 
 ## Description
 
-Zephyr is a programming language that is currently interpreted. It is designed to be a general purpose language that is easy to learn and use. It is also designed to be a language that is easy to use for beginners, but also powerful enough for advanced users.
-
-Its design is inspired by Object-Oriented Programming, Functional Programming, and Imperative Programming. It is also inspired by other languages such as C#, Java, JavaScript, Python, and Rust.
-
-Every type in Zephyr is an object. This means that every type has functions and fields. This also means that every type can be used as a value.
-
-Zephyr is a statically typed language. This means that the type of every value is known at compile time. This also means that the type of every value is known at runtime.
-
-The entry file of a program needs to export a type that has a **public shared** function called `main`. The `main` function is the entry point of the program. The `main` function takes two arguments: `argc` and `argv`. The `argc` argument is an integer that represents the number of arguments passed to the program. The `argv` argument is an array of strings that represents the arguments passed to the program.
-- See: `pub shared fnc main(argv: str[]): int`
-- See: `pub shared fnc main(argv: str[]): void`
-
 ## Examples
 
 ### Hello World
@@ -49,14 +37,6 @@ type Program {
 
 export Program;
 ```
-
-The code above is a simple "Hello, World!" program written in Zephyr. It is a single file program that prints "Hello, World!" to the console.
-
-The `import` statement imports the `std:console` module. The `std:console` module contains a type called `Console` that has a function called `printString`. The `printString` function prints a string to the console.
-
-The type `Program` is a type that contains a function called `main`. The `main` function is the entry point of the program. The `main` function takes two arguments: `argc` and `argv`. The `argc` argument is an integer that represents the number of arguments passed to the program. The `argv` argument is an array of strings that represents the arguments passed to the program.
-
-The `export` statement exports the `Program` type. The `Program` type is exported.
 
 ## Roadmap
 

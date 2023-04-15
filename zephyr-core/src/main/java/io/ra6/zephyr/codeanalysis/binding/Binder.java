@@ -1031,6 +1031,9 @@ public class Binder {
 
                 return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
             }
+
+            diagnostics.reportUndefinedMember(syntax.getMember().getLocation(), typeSymbol.getName(), member);
+            return bindErrorExpression(syntax);
         }
 
         if (target instanceof BoundThisExpression) {
@@ -1041,6 +1044,9 @@ public class Binder {
 
                 return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
             }
+
+            diagnostics.reportUndefinedMember(syntax.getMember().getLocation(), typeSymbol.getName(), member);
+            return bindErrorExpression(syntax);
         }
 
         if (target instanceof BoundFunctionCallExpression functionCall) {
@@ -1051,6 +1057,22 @@ public class Binder {
 
                 return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
             }
+
+            diagnostics.reportUndefinedMember(syntax.getMember().getLocation(), typeSymbol.getName(), member);
+            return bindErrorExpression(syntax);
+        }
+
+        if (target instanceof BoundConversionExpression conversion) {
+            TypeSymbol typeSymbol = conversion.getType();
+            if (typeSymbol.isFieldOrFunctionDeclared(member)) {
+                BoundExpression result = bindAndCheckMemberAccess(syntax, target, member, typeSymbol);
+                if (result != null) return result;
+
+                return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
+            }
+
+            diagnostics.reportUndefinedMember(syntax.getMember().getLocation(), typeSymbol.getName(), member);
+            return bindErrorExpression(syntax);
         }
 
         TypeSymbol typeSymbol = target.getType();
@@ -1061,7 +1083,7 @@ public class Binder {
             return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
         }
 
-        diagnostics.reportInvalidMemberAccess(syntax.getTarget().getLocation(), target.getSyntax());
+        diagnostics.reportInvalidMemberAccess(target.getSyntax().getLocation(), target.getSyntax());
         return bindErrorExpression(syntax);
     }
 
