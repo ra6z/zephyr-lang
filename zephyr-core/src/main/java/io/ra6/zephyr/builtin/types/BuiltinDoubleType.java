@@ -20,9 +20,9 @@ public class BuiltinDoubleType extends BuiltinType {
 
     private final BoundTypeScope typeScope = new BoundTypeScope(null, Types.DOUBLE);
 
-    private final FieldSymbol min = createPubSharedField("min", Types.DOUBLE, true);
-    private final FieldSymbol max = createPubSharedField("max", Types.DOUBLE, true);
-    private final FieldSymbol size = createPubSharedField("size", Types.DOUBLE, true);
+    private final FieldSymbol min = createPubSharedField("MIN", Types.DOUBLE, true);
+    private final FieldSymbol max = createPubSharedField("MAX", Types.DOUBLE, true);
+    private final FieldSymbol size = createPubSharedField("SIZE", Types.DOUBLE, true);
 
     private final InternalFunction fromInt = new InternalFunction("fromInt", true, Visibility.PUBLIC, List.of(new ParameterSymbol(PARAM_OTHER, Types.INT)), Types.DOUBLE, args -> {
         int otherValue = (int) args.get(PARAM_OTHER);

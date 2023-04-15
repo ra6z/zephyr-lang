@@ -1,11 +1,11 @@
 package io.ra6.zephyr.codeanalysis.binding;
 
+import io.ra6.zephyr.builtin.IFunctionBase;
+import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.codeanalysis.binding.expressions.BoundInternalFunctionExpression;
 import io.ra6.zephyr.codeanalysis.binding.expressions.BoundLiteralExpression;
 import io.ra6.zephyr.codeanalysis.binding.expressions.BoundVariableExpression;
 import io.ra6.zephyr.codeanalysis.binding.statements.*;
-import io.ra6.zephyr.builtin.Types;
-import io.ra6.zephyr.builtin.IFunctionBase;
 import io.ra6.zephyr.codeanalysis.symbols.VariableSymbol;
 import io.ra6.zephyr.codeanalysis.syntax.SyntaxNode;
 
@@ -51,7 +51,11 @@ public class BoundNodeFactory {
         return new BoundReturnStatement(node, boundExpression);
     }
 
-    public static BoundExpression createDoubleLiteral(SyntaxNode node, double minValue) {
-        return new BoundLiteralExpression(node, minValue, Types.DOUBLE);
+    public static BoundExpression createDoubleLiteral(SyntaxNode node, double value) {
+        return new BoundLiteralExpression(node, value, Types.DOUBLE);
+    }
+
+    public static BoundExpression createCharLiteral(SyntaxNode node, char value) {
+        return new BoundLiteralExpression(node, value, Types.CHAR);
     }
 }

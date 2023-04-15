@@ -11,6 +11,7 @@ public class Types {
     public static final TypeSymbol VOID = new TypeSymbol("void");
     public static final TypeSymbol INT = new TypeSymbol("int");
     public static final TypeSymbol STRING = new TypeSymbol("str");
+    public static final TypeSymbol CHAR = new TypeSymbol("char");
     public static final TypeSymbol BOOL = new TypeSymbol("bool");
     public static final TypeSymbol ERROR = new TypeSymbol("error");
     public static final TypeSymbol DOUBLE = new TypeSymbol("double");
@@ -33,12 +34,14 @@ public class Types {
         register(new BuiltinVoidType());
         register(new BuiltinDoubleType());
         register(new BuiltinBoolType());
+        register(new BuiltinCharType());
 
         literalTypeMapping.put(Integer.class, INT);
         literalTypeMapping.put(String.class, STRING);
         literalTypeMapping.put(Double.class, DOUBLE);
         literalTypeMapping.put(Boolean.class, BOOL);
         literalTypeMapping.put(Void.class, VOID);
+        literalTypeMapping.put(Character.class, CHAR);
     }
 
     public static TypeSymbol getLiteralType(Class<?> literalClass) {

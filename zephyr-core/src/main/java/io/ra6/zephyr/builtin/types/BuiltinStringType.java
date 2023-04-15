@@ -6,10 +6,7 @@ import io.ra6.zephyr.builtin.InternalUnaryOperator;
 import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.codeanalysis.binding.Visibility;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
-import io.ra6.zephyr.codeanalysis.symbols.BinaryOperatorSymbol;
-import io.ra6.zephyr.codeanalysis.symbols.ParameterSymbol;
-import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
-import io.ra6.zephyr.codeanalysis.symbols.UnaryOperatorSymbol;
+import io.ra6.zephyr.codeanalysis.symbols.*;
 
 import java.util.List;
 
@@ -25,10 +22,10 @@ public class BuiltinStringType extends BuiltinType {
         return thisValue.length();
     });
 
-    private final InternalFunction charAt = new InternalFunction("charAt", false, Visibility.PUBLIC, List.of(new ParameterSymbol("index", Types.INT)), Types.INT, args -> {
+    private final InternalFunction charAt = new InternalFunction("charAt", false, Visibility.PUBLIC, List.of(new ParameterSymbol("index", Types.INT)), Types.CHAR, args -> {
         String stringValue = (String) args.get(PARAM_THIS);
         int index = (int) args.get("index");
-        return (int) stringValue.charAt(index);
+        return stringValue.charAt(index);
     });
 
     private final InternalFunction substringSE = new InternalFunction("substringSE", false, Visibility.PUBLIC, List.of(new ParameterSymbol("start", Types.INT), new ParameterSymbol("end", Types.INT)), Types.STRING, args -> {
@@ -127,6 +124,10 @@ public class BuiltinStringType extends BuiltinType {
     });
 
     private final InternalFunction toString = new InternalFunction("toString", false, Visibility.PUBLIC, List.of(), Types.STRING, args -> args.get(PARAM_THIS));
+    private final InternalFunction toCharArray = new InternalFunction("toCharArray", false, Visibility.PUBLIC, List.of(), new ArrayTypeSymbol(Types.CHAR), args -> {
+        String str = (String) args.get(PARAM_THIS);
+        return str.toCharArray();
+    });
 
     @Override
     protected void declareFields() {
@@ -168,6 +169,7 @@ public class BuiltinStringType extends BuiltinType {
         typeScope.declareFunction(trimRight);
         typeScope.declareFunction(replace);
         typeScope.declareFunction(toString);
+        typeScope.declareFunction(toCharArray);
     }
 
     @Override
@@ -190,12 +192,16 @@ public class BuiltinStringType extends BuiltinType {
         typeScope.defineFunction(trimRight);
         typeScope.defineFunction(replace);
         typeScope.defineFunction(toString);
+        typeScope.declareFunction(toCharArray);
     }
 
     @Override
     protected void declareBinaryOperators() {
         // concat strings
         typeScope.declareBinaryOperator(createBinaryOperator("+", Types.STRING, Types.STRING));
+
+        // concat string with char
+        typeScope.declareBinaryOperator(createBinaryOperator("+", Types.CHAR, Types.STRING));
 
         // compare strings
         typeScope.declareBinaryOperator(createBinaryOperator("==", Types.STRING, Types.BOOL));
@@ -214,6 +220,10 @@ public class BuiltinStringType extends BuiltinType {
 
             InternalBinaryOperator ibo = new InternalBinaryOperator(symbol.getName(), otherType, symbol.getReturnType(), (args) -> {
                 String thisValue = (String) args.get(PARAM_THIS);
+
+                if (otherType == Types.CHAR)
+                    return thisValue + (char) args.get(PARAM_OTHER);
+
                 String otherValue = (String) args.get(PARAM_OTHER);
 
                 return switch (symbol.getName()) {

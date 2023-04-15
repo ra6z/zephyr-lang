@@ -762,6 +762,12 @@ public final class Parser {
             return new LiteralExpressionSyntax(syntaxTree, stringToken);
         }
 
+        // parse char literal
+        if (current().getKind() == SyntaxKind.CHARACTER_TOKEN) {
+            SyntaxToken charToken = nextToken();
+            return new LiteralExpressionSyntax(syntaxTree, charToken);
+        }
+
         // parse array creation
         if (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
             SyntaxToken leftBracket = nextToken();

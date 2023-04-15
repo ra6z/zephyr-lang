@@ -381,4 +381,28 @@ public final class DiagnosticBag {
         String hint = "Make sure the type name is not reserved.";
         reportError(location, message, hint);
     }
+
+    public void reportInvalidCharacterLiteral(TextLocation location) {
+        String message = "Invalid character literal.";
+        String hint = "Make sure the character literal is valid.";
+        reportError(location, message, hint);
+    }
+
+    public void reportInvalidEscapeSequence(TextLocation location) {
+        String message = "Invalid escape sequence.";
+        String hint = "Make sure the escape sequence is valid.";
+        reportError(location, message, hint);
+    }
+
+    public void reportUnterminatedChar(TextLocation location) {
+        String message = "Unterminated character literal.";
+        String hint = "Make sure the character literal is terminated.";
+        reportError(location, message, hint);
+    }
+
+    public void reportInvalidUnicodeEscapeSequence(TextLocation location) {
+        String message = "Invalid unicode escape sequence.";
+        String hint = "Make sure the unicode escape sequence is valid.";
+        reportError(location, message, hint);
+    }
 }

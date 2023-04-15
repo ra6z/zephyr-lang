@@ -17,9 +17,9 @@ import static io.ra6.zephyr.builtin.IFunctionBase.PARAM_THIS;
 public class BuiltinIntType extends BuiltinType {
 
     private final BoundTypeScope typeScope = new BoundTypeScope(null, Types.INT);
-    private final FieldSymbol max = createPubSharedField("max", Types.INT, true);
-    private final FieldSymbol min = createPubSharedField("min", Types.INT, true);
-    private final FieldSymbol size = createPubSharedField("size", Types.INT, true);
+    private final FieldSymbol max = createPubSharedField("MAX", Types.INT, true);
+    private final FieldSymbol min = createPubSharedField("MIN", Types.INT, true);
+    private final FieldSymbol size = createPubSharedField("SIZE", Types.INT, true);
 
     private final InternalFunction fromDouble = new InternalFunction("fromDouble", true, Visibility.PUBLIC, List.of(new ParameterSymbol(PARAM_OTHER, Types.DOUBLE)), Types.INT, args -> {
         double otherValue = (double) args.get(PARAM_OTHER);

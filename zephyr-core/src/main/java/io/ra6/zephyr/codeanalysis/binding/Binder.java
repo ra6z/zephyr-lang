@@ -1409,12 +1409,19 @@ public class Binder {
             case NUMBER_TOKEN, FLOATING_POINT_TOKEN -> bindNumberLiteralExpression(syntax);
             case TRUE_KEYWORD, FALSE_KEYWORD -> bindBooleanLiteralExpression(syntax);
             case STRING_TOKEN -> bindStringLiteralExpression(syntax);
+            case CHARACTER_TOKEN -> bindCharacterLiteralExpression(syntax);
 
             default -> {
                 diagnostics.reportTodoFeature(syntax.getLocation(), "Literal expression");
                 yield bindErrorExpression(syntax);
             }
         };
+    }
+
+    private BoundExpression bindCharacterLiteralExpression(LiteralExpressionSyntax syntax) {
+        TypeSymbol type = Types.CHAR;
+        Object value = syntax.getValueToken().getValue();
+        return new BoundLiteralExpression(syntax, value, type);
     }
 
     private BoundExpression bindStringLiteralExpression(LiteralExpressionSyntax syntax) {

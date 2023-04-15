@@ -518,6 +518,27 @@
 							"name": "constant.character.escape.zph"
 						}
 					]
+				},
+				{
+					"begin": "'",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.definition.string.begin.zph"
+						}
+					},
+					"end": "'",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.definition.string.end.zph"
+						}
+					},
+					"name": "string.quoted.single.zph",
+					"patterns": [
+						{
+							"match": "\\\\.",
+							"name": "constant.character.escape.zph"
+						}
+					]
 				}
 			]
 		},
@@ -535,7 +556,7 @@
 			]
 		},
 		"primitive-arrays": {
-			"begin": "\\b(void|bool|int|str|double)\\b\\s*(?=\\[)",
+			"begin": "\\b(void|bool|char|int|str|double)\\b\\s*(?=\\[)",
 			"name": "meta.type.array.primitive.zph",
 			"beginCaptures": {
 				"1": {
@@ -550,7 +571,7 @@
 			]
 		},
 		"primitive-types": {
-			"match": "\\b(void|bool|int|str|double)\\b",
+			"match": "\\b(void|bool|char|int|str|double)\\b",
 			"name": "storage.type.primitive.zph"
 		},
 		"object-types": {

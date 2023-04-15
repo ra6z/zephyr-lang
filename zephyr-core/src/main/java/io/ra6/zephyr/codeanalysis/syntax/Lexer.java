@@ -203,6 +203,7 @@ public final class Lexer {
                 currentPosition++;
             }
             case '"' -> readString();
+            case '\'' -> readChar();
             case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> readNumber();
             case '_' -> readIdentifierOrKeyword();
             case '\t', ' ', '\r', '\n' -> readWhitespace();
@@ -219,6 +220,84 @@ public final class Lexer {
                 }
             }
         }
+    }
+
+    private void readChar() {
+        currentPosition++;
+        StringBuilder sb = new StringBuilder();
+        boolean done = false;
+
+        while (!done) {
+            switch (current()) {
+                case '\0', '\r', '\n' -> {
+                    TextSpan span = new TextSpan(currentTokenStart, 1);
+                    TextLocation location = new TextLocation(sourceText, span);
+                    diagnostics.reportUnterminatedChar(location);
+                    done = true;
+                }
+                case '\\' -> {
+                    currentPosition++;
+                    if (current() == 'u') {
+                        // Unicode escape sequence
+                        currentPosition++;
+                        StringBuilder unicodeDigits = new StringBuilder();
+                        for (int i = 0; i < 4; i++) {
+                            if (Character.digit(current(), 16) == -1) {
+                                // Invalid Unicode digit
+                                TextSpan span = new TextSpan(currentTokenStart, 6);
+                                TextLocation location = new TextLocation(sourceText, span);
+                                diagnostics.reportInvalidUnicodeEscapeSequence(location);
+                                break;
+                            }
+                            unicodeDigits.append(current());
+                            currentPosition++;
+                        }
+                        char escapedChar = (char) Integer.parseInt(unicodeDigits.toString(), 16);
+                        sb.append(escapedChar);
+                    } else {
+                        // Other escape sequence
+                        char escapedChar = '\0';
+                        switch (current()) {
+                            case '0' -> escapedChar = '\0';
+                            case 'a' -> escapedChar = '\u0007';
+                            case 'b' -> escapedChar = '\b';
+                            case 't' -> escapedChar = '\t';
+                            case 'n' -> escapedChar = '\n';
+                            case 'v' -> escapedChar = '\u000b';
+                            case 'f' -> escapedChar = '\f';
+                            case 'r' -> escapedChar = '\r';
+                            case '"' -> escapedChar = '"';
+                            case '\'' -> escapedChar = '\'';
+                            case '\\' -> escapedChar = '\\';
+                            default -> {
+                                TextSpan span = new TextSpan(currentTokenStart, 1);
+                                TextLocation location = new TextLocation(sourceText, span);
+                                diagnostics.reportInvalidEscapeSequence(location);
+                            }
+                        }
+                        sb.append(escapedChar);
+                        currentPosition++;
+                    }
+                }
+                case '\'' -> {
+                    currentPosition++;
+                    done = true;
+                }
+                default -> {
+                    sb.append(current());
+                    currentPosition++;
+                }
+            }
+        }
+
+        if (sb.length() != 1) {
+            TextSpan span = new TextSpan(currentTokenStart, sb.length());
+            TextLocation location = new TextLocation(sourceText, span);
+            diagnostics.reportInvalidCharacterLiteral(location);
+        }
+
+        currentTokenKind = SyntaxKind.CHARACTER_TOKEN;
+        currentTokenValue = sb.toString();
     }
 
     private void readString() {

@@ -47,6 +47,7 @@ public enum SyntaxKind {
     SLASH_EQUALS_TOKEN,
 
     STRING_TOKEN,
+    CHARACTER_TOKEN,
     BAD_TOKEN,
     NUMBER_TOKEN,
     FLOATING_POINT_TOKEN,
