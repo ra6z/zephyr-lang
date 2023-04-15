@@ -645,7 +645,7 @@ public class Binder {
         ConstructorSymbol constructor = typeScope.getType().getConstructor(parameters.size());
         currentFunctionOrConstructor = constructor;
 
-        BoundBlockStatement body = bindBlockStatement(syntax.getBody());
+        BoundBlockStatement body = Lowerer.lower(constructor, bindBlockStatement(syntax.getBody()));
 
         currentFunctionOrConstructor = null;
         typeScope.defineConstructor(constructor, body);

@@ -1,12 +1,14 @@
 package io.ra6.zephyr.codeanalysis.lowering;
 
 import io.ra6.zephyr.Iterables;
+import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.codeanalysis.binding.*;
 import io.ra6.zephyr.codeanalysis.binding.statements.BoundBlockStatement;
 import io.ra6.zephyr.codeanalysis.binding.statements.BoundIfStatement;
 import io.ra6.zephyr.codeanalysis.binding.statements.BoundReturnStatement;
 import io.ra6.zephyr.codeanalysis.binding.statements.BoundWhileStatement;
-import io.ra6.zephyr.builtin.Types;
+import io.ra6.zephyr.codeanalysis.symbols.CallableSymbol;
+import io.ra6.zephyr.codeanalysis.symbols.ConstructorSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.FunctionSymbol;
 import lombok.experimental.ExtensionMethod;
 
@@ -22,14 +24,14 @@ public class Lowerer extends BoundTreeRewriter {
         return new BoundLabel("label$" + labelCount++);
     }
 
-    public static BoundBlockStatement lower(FunctionSymbol function, BoundStatement root) {
+    public static BoundBlockStatement lower(CallableSymbol callable, BoundStatement root) {
         Lowerer lowerer = new Lowerer();
         BoundStatement result = lowerer.rewriteStatement(root);
 
-        return flatten(function, result);
+        return flatten(callable, result);
     }
 
-    private static BoundBlockStatement flatten(FunctionSymbol function, BoundStatement statement) {
+    private static BoundBlockStatement flatten(CallableSymbol callable, BoundStatement statement) {
         List<BoundStatement> statements = new ArrayList<>();
         Stack<BoundStatement> stack = new Stack<>();
 
@@ -47,7 +49,13 @@ public class Lowerer extends BoundTreeRewriter {
             }
         }
 
-        if (function.getType() == Types.VOID) {
+        if (callable instanceof FunctionSymbol function) {
+            if (function.getType() == Types.VOID) {
+                if (statements.size() == 0 || canFallThrough(statements.last())) {
+                    statements.add(new BoundReturnStatement(statement.getSyntax(), null));
+                }
+            }
+        } else if (callable instanceof ConstructorSymbol constructor) {
             if (statements.size() == 0 || canFallThrough(statements.last())) {
                 statements.add(new BoundReturnStatement(statement.getSyntax(), null));
             }
