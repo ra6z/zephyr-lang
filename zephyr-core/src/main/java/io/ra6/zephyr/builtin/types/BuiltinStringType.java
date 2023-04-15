@@ -1,11 +1,15 @@
 package io.ra6.zephyr.builtin.types;
 
+import io.ra6.zephyr.builtin.InternalBinaryOperator;
+import io.ra6.zephyr.builtin.InternalFunction;
+import io.ra6.zephyr.builtin.InternalUnaryOperator;
+import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.codeanalysis.binding.Visibility;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
-import io.ra6.zephyr.builtin.Types;
-import io.ra6.zephyr.builtin.InternalFunction;
+import io.ra6.zephyr.codeanalysis.symbols.BinaryOperatorSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.ParameterSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
+import io.ra6.zephyr.codeanalysis.symbols.UnaryOperatorSymbol;
 
 import java.util.List;
 
@@ -186,22 +190,78 @@ public class BuiltinStringType extends BuiltinType {
 
     @Override
     protected void declareBinaryOperators() {
+        // concat strings
+        typeScope.declareBinaryOperator(createBinaryOperator("+", Types.STRING, Types.STRING));
+
+        // compare strings
+        typeScope.declareBinaryOperator(createBinaryOperator("==", Types.STRING, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator("!=", Types.STRING, Types.BOOL));
+        // compare string lengths
+        typeScope.declareBinaryOperator(createBinaryOperator("<", Types.STRING, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator("<=", Types.STRING, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator(">", Types.STRING, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator(">=", Types.STRING, Types.BOOL));
+
 
     }
 
     @Override
     protected void defineBinaryOperators() {
+        for (BinaryOperatorSymbol symbol : typeScope.getDeclaredBinaryOperators()) {
+            TypeSymbol otherType = symbol.getOtherType();
 
+            InternalBinaryOperator ibo = new InternalBinaryOperator(symbol.getName(), otherType, symbol.getReturnType(), (args) -> {
+                String thisValue = (String) args.get(PARAM_THIS);
+                String otherValue = (String) args.get(PARAM_OTHER);
+
+                return switch (symbol.getName()) {
+                    case "+" -> thisValue + otherValue;
+                    case "==" -> thisValue.equals(otherValue);
+                    case "!=" -> !thisValue.equals(otherValue);
+                    case "<" -> thisValue.length() < otherValue.length();
+                    case "<=" -> thisValue.length() <= otherValue.length();
+                    case ">" -> thisValue.length() > otherValue.length();
+                    case ">=" -> thisValue.length() >= otherValue.length();
+                    default -> throw new RuntimeException("Unknown binary operator: " + symbol.getName());
+                };
+            });
+
+            typeScope.defineBinaryOperator(symbol, ibo.bindBody());
+        }
     }
 
     @Override
     protected void declareUnaryOperators() {
-
+        // lowercase characters to uppercase characters and vice versa
+        typeScope.declareUnaryOperator(createUnaryOperator("~", Types.STRING));
     }
 
     @Override
     protected void defineUnaryOperators() {
+        for (UnaryOperatorSymbol symbol : typeScope.getDeclaredUnaryOperators()) {
+            InternalUnaryOperator iuo = new InternalUnaryOperator(symbol.getName(), symbol.getReturnType(), (args) -> {
+                String thisValue = (String) args.get(PARAM_THIS);
 
+                if (symbol.getName().equals("~")) {
+                    StringBuilder result = new StringBuilder();
+                    for (int i = 0; i < thisValue.length(); i++) {
+                        char c = thisValue.charAt(i);
+                        if (Character.isUpperCase(c)) {
+                            result.append(Character.toLowerCase(c));
+                        } else if (Character.isLowerCase(c)) {
+                            result.append(Character.toUpperCase(c));
+                        } else {
+                            result.append(c);
+                        }
+                    }
+                    return result.toString();
+                }
+
+                throw new RuntimeException("Unknown unary operator: " + symbol.getName());
+            });
+
+            typeScope.defineUnaryOperator(symbol, iuo.bindBody());
+        }
     }
 
     @Override
