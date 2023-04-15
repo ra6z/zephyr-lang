@@ -927,6 +927,10 @@ public class Binder {
             }
         }
 
+        if (value.getType().isGeneric()) {
+            value = new BoundConversionExpression(value.getSyntax(), field.getType(), value.getType(), value);
+        }
+
         if (!field.getType().equals(value.getType())) {
             diagnostics.reportCannotConvert(syntax.getRight().getLocation(), value.getType(), field.getType());
             return bindErrorExpression(syntax);
@@ -945,7 +949,6 @@ public class Binder {
             diagnostics.reportCannotAssign(syntax.getOperatorToken().getLocation(), variable.getName());
             return bindErrorExpression(syntax);
         }
-
 
         if (variable.getType() instanceof ArrayTypeSymbol array) {
             if (value instanceof BoundArrayLiteralExpression arrayLiteralExpression) {
@@ -1474,7 +1477,7 @@ public class Binder {
             }
         } else if (scope instanceof BoundTypeScope typeScope) {
             if (typeScope.isGenericDeclared(typeName)) {
-                type = new TypeSymbol(typeName);
+                type = TypeSymbol.createGeneric(typeName);
             }
         }
         return type;
