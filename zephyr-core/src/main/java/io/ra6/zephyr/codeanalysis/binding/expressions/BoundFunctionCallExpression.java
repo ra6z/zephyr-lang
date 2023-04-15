@@ -9,7 +9,7 @@ import lombok.Getter;
 
 import java.util.List;
 
-public class BoundMethodCallExpression extends BoundExpression {
+public class BoundFunctionCallExpression extends BoundExpression {
     @Getter
     private final BoundExpression callee;
     @Getter
@@ -17,7 +17,7 @@ public class BoundMethodCallExpression extends BoundExpression {
     @Getter
     private final List<BoundExpression> arguments;
 
-    public BoundMethodCallExpression(SyntaxNode syntax, BoundExpression callee, FunctionSymbol function, List<BoundExpression> arguments) {
+    public BoundFunctionCallExpression(SyntaxNode syntax, BoundExpression callee, FunctionSymbol function, List<BoundExpression> arguments) {
         super(syntax);
         this.callee = callee;
         this.function = function;
@@ -31,6 +31,6 @@ public class BoundMethodCallExpression extends BoundExpression {
 
     @Override
     public BoundNodeKind getKind() {
-        return BoundNodeKind.METHOD_CALL_EXPRESSION;
+        return BoundNodeKind.FUNCTION_CALL_EXPRESSION;
     }
 }

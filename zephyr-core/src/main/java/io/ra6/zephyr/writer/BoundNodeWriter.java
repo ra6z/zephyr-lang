@@ -39,7 +39,7 @@ public class BoundNodeWriter {
             case ASSIGNMENT_EXPRESSION -> writeAssignmentExpression(writer, (BoundAssignmentExpression) node);
             case UNARY_EXPRESSION -> writeUnaryExpression(writer, (BoundUnaryExpression) node);
             case BINARY_EXPRESSION -> writeBinaryExpression(writer, (BoundBinaryExpression) node);
-            case METHOD_CALL_EXPRESSION -> writeMethodCallExpression(writer, (BoundMethodCallExpression) node);
+            case FUNCTION_CALL_EXPRESSION -> writeFunctionCallExpression(writer, (BoundFunctionCallExpression) node);
             case CONDITIONAL_EXPRESSION -> writeConditionalExpression(writer, (BoundConditionalExpression) node);
             case FIELD_ACCESS_EXPRESSION -> writeFieldAccessExpression(writer, (BoundFieldAccessExpression) node);
             case MEMBER_ACCESS_EXPRESSION -> writeMemberAccessExpression(writer, (BoundMemberAccessExpression) node);
@@ -175,7 +175,7 @@ public class BoundNodeWriter {
         writeNode(writer, node.getRight());
     }
 
-    private static void writeMethodCallExpression(IndentedWriter writer, BoundMethodCallExpression node) {
+    private static void writeFunctionCallExpression(IndentedWriter writer, BoundFunctionCallExpression node) {
         writeNode(writer, node.getCallee());
         writer.print("(");
         for (int i = 0; i < node.getArguments().size(); i++) {

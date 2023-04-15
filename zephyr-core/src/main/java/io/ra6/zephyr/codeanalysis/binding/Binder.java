@@ -1213,7 +1213,7 @@ public class Binder {
                     }
                 }
 
-                BoundExpression methodCall = new BoundMethodCallExpression(syntax, target, function, boundArguments);
+                BoundExpression methodCall = new BoundFunctionCallExpression(syntax, target, function, boundArguments);
                 if (variable.getVariable().isGenericType(function.getType())) {
                     methodCall = bindConversion(methodCall, variable.getVariable().getGenericType(function.getType()), function.getType());
                 }
@@ -1244,7 +1244,7 @@ public class Binder {
                     }
                 }
 
-                return new BoundMethodCallExpression(syntax, target, function, boundArguments);
+                return new BoundFunctionCallExpression(syntax, target, function, boundArguments);
             }
 
             if (target instanceof BoundFieldAccessExpression field) {
@@ -1255,7 +1255,7 @@ public class Binder {
             }
 
             TypeSymbol type = member.getTarget().getType();
-            return new BoundMethodCallExpression(syntax, target, type.getFunction(member.getMember().getName(), false), boundArguments);
+            return new BoundFunctionCallExpression(syntax, target, type.getFunction(member.getMember().getName(), false), boundArguments);
         }
 
         if (callee instanceof BoundLiteralExpression literal) {

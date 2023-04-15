@@ -128,7 +128,7 @@ public class ProgramEvaluator {
             case UNARY_EXPRESSION -> evaluateUnaryExpression((BoundUnaryExpression) expression);
             case BINARY_EXPRESSION -> evaluateBinaryExpression((BoundBinaryExpression) expression);
             case CONDITIONAL_EXPRESSION -> evaluateConditionalExpression((BoundConditionalExpression) expression);
-            case METHOD_CALL_EXPRESSION -> evaluateMethodCallExpression((BoundMethodCallExpression) expression);
+            case FUNCTION_CALL_EXPRESSION -> evaluateFunctionCallExpression((BoundFunctionCallExpression) expression);
             case MEMBER_ACCESS_EXPRESSION -> evaluateMemberAccessExpression((BoundMemberAccessExpression) expression);
             case FIELD_ACCESS_EXPRESSION -> evaluateFieldAccessExpression((BoundFieldAccessExpression) expression);
             case INSTANCE_CREATION_EXPRESSION ->
@@ -390,7 +390,7 @@ public class ProgramEvaluator {
         throw new RuntimeException("Unexpected target type: " + target.getClass().getSimpleName());
     }
 
-    private Object evaluateMethodCallExpression(BoundMethodCallExpression expression) {
+    private Object evaluateFunctionCallExpression(BoundFunctionCallExpression expression) {
         BoundExpression callee = expression.getCallee();
 
         // check if the callee is a type instance

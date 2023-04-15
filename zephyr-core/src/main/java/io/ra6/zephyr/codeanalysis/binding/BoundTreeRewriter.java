@@ -123,7 +123,7 @@ public abstract class BoundTreeRewriter {
             case ASSIGNMENT_EXPRESSION -> rewriteAssignmentExpression((BoundAssignmentExpression) node);
             case UNARY_EXPRESSION -> rewriteUnaryExpression((BoundUnaryExpression) node);
             case BINARY_EXPRESSION -> rewriteBinaryExpression((BoundBinaryExpression) node);
-            case METHOD_CALL_EXPRESSION -> rewriteMethodCallExpression((BoundMethodCallExpression) node);
+            case FUNCTION_CALL_EXPRESSION -> rewriteFunctionCallExpression((BoundFunctionCallExpression) node);
             case INSTANCE_CREATION_EXPRESSION ->
                     rewriteInstanceCreationExpression((BoundInstanceCreationExpression) node);
             case MEMBER_ACCESS_EXPRESSION -> rewriteMemberAccessExpression((BoundMemberAccessExpression) node);
@@ -230,7 +230,7 @@ public abstract class BoundTreeRewriter {
         return new BoundInstanceCreationExpression(node.getSyntax(), node.getType(), arguments, node.getGenericTypes());
     }
 
-    protected BoundExpression rewriteMethodCallExpression(BoundMethodCallExpression node) {
+    protected BoundExpression rewriteFunctionCallExpression(BoundFunctionCallExpression node) {
         List<BoundExpression> arguments = null;
 
         for (int i = 0; i < node.getArguments().size(); i++) {
@@ -252,7 +252,7 @@ public abstract class BoundTreeRewriter {
             return node;
         }
 
-        return new BoundMethodCallExpression(node.getSyntax(), node.getCallee(), node.getFunction(), arguments);
+        return new BoundFunctionCallExpression(node.getSyntax(), node.getCallee(), node.getFunction(), arguments);
     }
 
     protected BoundExpression rewriteBinaryExpression(BoundBinaryExpression node) {
