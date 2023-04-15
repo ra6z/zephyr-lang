@@ -132,8 +132,23 @@ public abstract class BoundTreeRewriter {
             case ARRAY_ACCESS_EXPRESSION -> rewriteArrayAccessExpression((BoundArrayAccessExpression) node);
             case ARRAY_CREATION_EXPRESSION -> rewriteArrayCreationExpression((BoundArrayCreationExpression) node);
             case CONVERSION_EXPRESSION -> rewriteConversionExpression((BoundConversionExpression) node);
+            case CONDITIONAL_EXPRESSION -> rewriteConditionalExpression((BoundConditionalExpression) node);
             default -> throw new IllegalArgumentException("Cannot rewrite " + node.getKind());
         };
+    }
+
+    private BoundExpression rewriteConditionalExpression(BoundConditionalExpression node) {
+        BoundExpression condition = rewriteExpression(node.getCondition());
+        BoundExpression thenExpression = rewriteExpression(node.getThenExpression());
+        BoundExpression elseExpression = rewriteExpression(node.getElseExpression());
+
+        if (condition == node.getCondition() &&
+                thenExpression == node.getThenExpression() &&
+                elseExpression == node.getElseExpression()) {
+            return node;
+        }
+
+        return new BoundConditionalExpression(node.getSyntax(), condition, thenExpression, elseExpression);
     }
 
     private BoundExpression rewriteConversionExpression(BoundConversionExpression node) {

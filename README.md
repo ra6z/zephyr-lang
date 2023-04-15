@@ -47,6 +47,7 @@ export Program;
 - [x] Interpreter
 - [ ] Control flow analysis
   - [ ] Control flow graph
+    - [ ] All branches return
   - [ ] Dead code elimination
 - [ ] Code generation
   - [ ] WASM
