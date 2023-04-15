@@ -10,9 +10,15 @@ import java.util.List;
 
 public class NativeConsole extends NativeType {
     private final BoundTypeScope typeScope = new BoundTypeScope(null, getTypeSymbol());
-    private final InternalFunction logString = new InternalFunction("logString", true, Visibility.PUBLIC, List.of(new ParameterSymbol("message", Types.STRING)), Types.VOID, args -> {
+    private final InternalFunction printlnString = new InternalFunction("printlnString", true, Visibility.PUBLIC, List.of(new ParameterSymbol("message", Types.STRING)), Types.VOID, args -> {
         String str = (String) args.get("message");
         System.out.println(str);
+        return null;
+    });
+
+    private final InternalFunction printString = new InternalFunction("printString", true, Visibility.PUBLIC, List.of(new ParameterSymbol("message", Types.STRING)), Types.VOID, args -> {
+        String str = (String) args.get("message");
+        System.out.print(str);
         return null;
     });
 
@@ -43,12 +49,14 @@ public class NativeConsole extends NativeType {
 
     @Override
     protected void declareFunctions() {
-        typeScope.declareFunction(logString);
+        typeScope.declareFunction(printlnString);
+        typeScope.declareFunction(printString);
     }
 
     @Override
     protected void defineFunctions() {
-        typeScope.defineFunction(logString);
+        typeScope.defineFunction(printlnString);
+        typeScope.defineFunction(printString);
     }
 
     @Override
