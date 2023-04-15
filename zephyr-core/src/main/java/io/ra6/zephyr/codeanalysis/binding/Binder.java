@@ -141,6 +141,11 @@ public class Binder {
             return;
         }
 
+        if (isReservedTypeName(typeName)) {
+            diagnostics.reportReservedTypeName(syntax.getIdentifier().getLocation(), typeName);
+            return;
+        }
+
         boolean hasGenerics = syntax.getGenericParameterClause() != null;
 
         TypeSymbol type = new TypeSymbol(typeName);
@@ -193,6 +198,11 @@ public class Binder {
 
     private void bindTypeDeclaration(TypeDeclarationSyntax syntax) {
         String typeName = syntax.getIdentifier().getText();
+
+        if (isReservedTypeName(typeName)) {
+            // Don't report this error again, because it was already reported in declareTypeDeclaration
+            return;
+        }
 
         if (!programScope.isTypeDeclared(typeName)) {
             diagnostics.reportUndefinedType(syntax.getIdentifier().getLocation(), typeName);
@@ -294,9 +304,6 @@ public class Binder {
         typeScope.declareField(field);
     }
 
-    private boolean isReservedFieldName(String fieldName) {
-        return fieldName.equals("toString");
-    }
 
     private void bindTypeFieldDeclaration(TypeFieldDeclarationSyntax syntax) {
         BoundTypeScope typeScope = (BoundTypeScope) scope;
@@ -1324,6 +1331,14 @@ public class Binder {
             return bindErrorExpression(syntax);
         }
 
+        // if the left type is string, then we call toString on the right type.
+        // toString will always be there, because it is getting generated in the Type if it is not defined.
+        if (leftType.equals(Types.STRING) && !rightType.equals(Types.STRING)) {
+            FunctionSymbol toString = rightType.getFunction("toString", false);
+            right = new BoundFunctionCallExpression(syntax.getRight(), right, toString, List.of());
+            rightType = Types.STRING;
+        }
+
         if (leftType.isBinaryOperatorDefined(syntax.getOperatorToken().getText(), rightType)) {
             TypeSymbol type = leftType.getBinaryOperatorType(syntax.getOperatorToken().getText(), rightType);
             return new BoundBinaryExpression(syntax, left, syntax.getOperatorToken().getText(), right, type);
@@ -1427,5 +1442,13 @@ public class Binder {
         }
 
         return type;
+    }
+
+    private boolean isReservedFieldName(String fieldName) {
+        return fieldName.equals("toString");
+    }
+
+    private boolean isReservedTypeName(String typeName) {
+        return typeName.equals("any");
     }
 }

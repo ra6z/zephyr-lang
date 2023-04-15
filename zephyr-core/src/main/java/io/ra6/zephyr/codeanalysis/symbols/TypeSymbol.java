@@ -39,7 +39,7 @@ public class TypeSymbol extends Symbol {
     }
 
     public boolean isBinaryOperatorDefined(String operator, TypeSymbol toSymbol) {
-        return binaryOperators.stream().anyMatch(o -> o.getName().equals(operator) && o.getOtherType() == toSymbol);
+        return binaryOperators.stream().anyMatch(o -> o.getName().equals(operator) && o.getOtherType().equals(toSymbol));
     }
 
     @Override
@@ -48,7 +48,7 @@ public class TypeSymbol extends Symbol {
     }
 
     public TypeSymbol getBinaryOperatorType(String text, TypeSymbol rightType) {
-        Optional<BinaryOperatorSymbol> symbol = binaryOperators.stream().filter(o -> o.getName().equals(text) && o.getOtherType() == rightType).findFirst();
+        Optional<BinaryOperatorSymbol> symbol = binaryOperators.stream().filter(o -> o.getName().equals(text) && o.getOtherType().equals(rightType)).findFirst();
         if (symbol.isPresent()) {
             return symbol.get().getReturnType();
         }
@@ -109,7 +109,7 @@ public class TypeSymbol extends Symbol {
     }
 
     public BinaryOperatorSymbol getBinaryOperator(String operator, TypeSymbol rightType) {
-        Optional<BinaryOperatorSymbol> symbol = binaryOperators.stream().filter(o -> o.getName().equals(operator) && o.getOtherType() == rightType).findFirst();
+        Optional<BinaryOperatorSymbol> symbol = binaryOperators.stream().filter(o -> o.getName().equals(operator) && o.getOtherType().equals(rightType)).findFirst();
         return symbol.orElse(null);
     }
 

@@ -375,4 +375,10 @@ public final class DiagnosticBag {
         String hint = "Make sure the 'toString' function is valid.";
         reportError(location, message, hint);
     }
+
+    public void reportReservedTypeName(TextLocation location, String name) {
+        String message = "Type name '%s' is reserved.".formatted(name);
+        String hint = "Make sure the type name is not reserved.";
+        reportError(location, message, hint);
+    }
 }
