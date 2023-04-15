@@ -19,18 +19,20 @@ import io.ra6.zephyr.writer.SyntaxWriter;
 import lombok.experimental.ExtensionMethod;
 
 import java.io.IOException;
-import java.util.List;
 
-@ExtensionMethod({DiagnosticWriter.class,  SyntaxWriter.class})
+@ExtensionMethod({DiagnosticWriter.class, SyntaxWriter.class})
 public final class Evaluator {
+    private final BoundProgram boundProgram;
     private final String[] args;
 
     private final ProgramEvaluator mainProgramEvaluator;
 
     private Evaluator(BoundProgram boundProgram, String[] args) {
+        this.boundProgram = boundProgram;
         this.args = args;
         this.mainProgramEvaluator = new ProgramEvaluator(boundProgram.getProgramScope());
     }
+
     public static EvaluationResult run(String inputPath, String standardLibraryPath, int flags, String[] args) {
         try {
             ZephyrLibraryMetadata standardLibraryMeta = new ZephyrLibraryMetadata("Standard Library", "std", standardLibraryPath, "0.0.1", "rasix", "");
@@ -45,14 +47,14 @@ public final class Evaluator {
             Binder binder = new Binder(mainTree, standardLibrary);
             BoundProgram boundProgram = binder.bindProgram();
 
-            return Evaluator.evaluate(boundProgram, args);
+            Evaluator evaluator = new Evaluator(boundProgram, args);
+            return evaluator.evaluate();
         } catch (IOException e) {
             return new EvaluationResult(-1);
         }
     }
-    private static EvaluationResult evaluate(BoundProgram boundProgram, String[] args) {
-        Evaluator evaluator = new Evaluator(boundProgram, args);
 
+    private EvaluationResult evaluate() {
         if (boundProgram.getDiagnostics().hasErrors()) {
             System.out.printDiagnostics(boundProgram.getDiagnostics());
             return new EvaluationResult(-1);
@@ -71,51 +73,38 @@ public final class Evaluator {
             return new EvaluationResult(-1);
         }
 
-        FunctionSymbol main = type.getFunction("main", true);
+        FunctionSymbol mainFunction = type.getFunction("main", true);
 
-        if (!main.isShared()) {
+        if (!mainFunction.isShared()) {
             System.out.println("Main function is not shared. Need a shared main function to run the program.");
             return new EvaluationResult(-1);
         }
 
         boolean hasArgs = false;
 
-        if (main.getParameters().size() == 2) {
-            if (main.getParameters().get(0).getType().equals(Types.INT) &&
-                    main.getParameters().get(1).getType().equals(new ArrayTypeSymbol(Types.STRING))) {
+        if (mainFunction.getParameters().size() == 1) {
+            if (mainFunction.getParameters().get(0).getType().equals(new ArrayTypeSymbol(Types.STRING))) {
                 hasArgs = true;
             } else {
-                System.out.println("Main function has invalid parameters. Need a main function with parameters (int, str[]) or no parameters to run the program.");
+                System.out.println("Main function has invalid parameters. Need a main function with parameters (str[]) or no parameters to run the program.");
                 return new EvaluationResult(-1);
             }
-        } else if (main.getParameters().size() != 0) {
-            System.out.println("Main function has invalid parameters. Need a main function with parameters (int, str[]) or no parameters to run the program.");
-            return new EvaluationResult(-1);
         }
 
-        // TODO: args
-        Object result = evaluator.evaluateEntryMethod(type, main);
-
-        if (result instanceof Integer) return new EvaluationResult((Integer) result);
-        return new EvaluationResult(0);
-    }
-
-    private Object evaluateEntryMethod(TypeSymbol entryType, FunctionSymbol mainFunction) {
         mainProgramEvaluator.getLocals().push(new VariableTable("<entry>"));
 
-        VariableSymbol argcSymbol = new VariableSymbol("argc", true, Types.INT);
         // TODO: add array
-        VariableSymbol argvSymbol = new VariableSymbol("argv", true, new ArrayTypeSymbol(Types.STRING));
+        if (hasArgs) {
+            VariableSymbol argvSymbol = new VariableSymbol("argv", true, new ArrayTypeSymbol(Types.STRING));
+            mainProgramEvaluator.assign(argvSymbol, args);
+        }
 
-        mainProgramEvaluator.assign(argcSymbol, args.length);
-        mainProgramEvaluator.assign(argvSymbol, List.of(args));
-
-        BoundBlockStatement mainFunctionBody = mainProgramEvaluator.getBoundProgramScope().getTypeScope(entryType).getFunctionScope(mainFunction);
+        BoundBlockStatement mainFunctionBody = mainProgramEvaluator.getBoundProgramScope().getTypeScope(type).getFunctionScope(mainFunction);
         mainProgramEvaluator.evaluateStatement(mainFunctionBody);
         mainProgramEvaluator.getLocals().pop();
 
-        if (mainFunction.getType() != Types.VOID) return mainProgramEvaluator.getLastValue();
-        return null;
+        Object result = mainProgramEvaluator.getLastValue();
+        if (result instanceof Integer) return new EvaluationResult((Integer) result);
+        return new EvaluationResult(0);
     }
-
 }

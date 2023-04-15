@@ -31,7 +31,8 @@ Every type in Zephyr is an object. This means that every type has functions and 
 Zephyr is a statically typed language. This means that the type of every value is known at compile time. This also means that the type of every value is known at runtime.
 
 The entry file of a program needs to export a type that has a **public shared** function called `main`. The `main` function is the entry point of the program. The `main` function takes two arguments: `argc` and `argv`. The `argc` argument is an integer that represents the number of arguments passed to the program. The `argv` argument is an array of strings that represents the arguments passed to the program.
-See: `pub shared fnc main(argc: int, argv: str[]): int`
+- See: `pub shared fnc main(argv: str[]): int`
+- See: `pub shared fnc main(argv: str[]): void`
 
 ## Examples
 
@@ -41,9 +42,8 @@ See: `pub shared fnc main(argc: int, argv: str[]): int`
 import "std:console";
 
 type Program {
-  pub shared fn main(argc: int, argv: str[]): int {
+  pub shared fn main(argv: str[]): void {
     Console.log("Hello, World!");
-    return 0;
   }
 }
 
