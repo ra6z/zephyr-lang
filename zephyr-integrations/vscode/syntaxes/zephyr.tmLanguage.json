@@ -815,7 +815,7 @@
 			},
 			"patterns": [
 				{
-					"match": "\"([\\w\\/\\:]*)\"",
+					"match": "\"([\\.\\w\\/\\:]*)\"",
 					"name": "string.quoted.double.import.zph"
 				},
 				{
