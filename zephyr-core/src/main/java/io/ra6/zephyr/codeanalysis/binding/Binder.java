@@ -177,6 +177,9 @@ public class Binder {
             }
         }
 
+
+        declareGeneratedFunctions(syntax, typeScope);
+
         type.setFieldsAndFunctions(typeScope.getDeclaredFieldsAndFunctions());
         type.setConstructors(typeScope.getDeclaredConstructors());
         type.setBinaryOperators(typeScope.getDeclaredBinaryOperators());
@@ -199,7 +202,8 @@ public class Binder {
         TypeSymbol type = programScope.getType(typeName);
         currentType = type;
 
-        scope = programScope.getTypeScope(type);
+        BoundTypeScope typeScope = programScope.getTypeScope(type);
+        scope = typeScope;
 
         for (StatementSyntax member : syntax.getMembers()) {
             switch (member.getKind()) {
@@ -216,14 +220,57 @@ public class Binder {
             }
         }
 
+        defineGeneratedFunctions(type, typeScope);
+
         scope = scope.getParent();
         currentType = null;
+    }
+
+    private void defineGeneratedFunctions(TypeSymbol type, BoundTypeScope typeScope) {
+        FunctionSymbol toStringFunction = typeScope.getFunction("toString");
+
+        if (typeScope.getFunctionScope(toStringFunction) == null) {
+            BoundBlockStatement body = BoundNodeFactory.createBlockStatement(null,
+                    new BoundReturnStatement(null, new BoundLiteralExpression(null, type.getName(), Types.STRING))
+            );
+            typeScope.defineFunction(toStringFunction, body);
+        }
+    }
+
+    private void declareGeneratedFunctions(TypeDeclarationSyntax syntax, BoundTypeScope typeScope) {
+        FunctionSymbol toStringFunction = typeScope.getFunction("toString");
+
+        if (toStringFunction == null) {
+            toStringFunction = new FunctionSymbol("toString", false, Visibility.PUBLIC, List.of(), Types.STRING);
+        } else {
+            if (toStringFunction.getParameters().size() != 0) {
+                diagnostics.reportInvalidToStringFunction(syntax.getLocation(), syntax.getIdentifier().getText(), "Parameter count must be 0");
+                return;
+            }
+
+            if (!toStringFunction.getType().equals(Types.STRING)) {
+                diagnostics.reportInvalidToStringFunction(syntax.getLocation(), syntax.getIdentifier().getText(), "Return type must be string");
+                return;
+            }
+
+            if (toStringFunction.getVisibility() != Visibility.PUBLIC) {
+                diagnostics.reportInvalidToStringFunction(syntax.getLocation(), syntax.getIdentifier().getText(), "Visibility must be public");
+                return;
+            }
+        }
+
+        typeScope.declareFunction(toStringFunction);
     }
 
     private void declareTypeFieldDeclaration(TypeFieldDeclarationSyntax syntax) {
         BoundTypeScope typeScope = (BoundTypeScope) scope;
 
         String fieldName = syntax.getIdentifier().getText();
+
+        if (isReservedFieldName(fieldName)) {
+            diagnostics.reportFieldNameIsReserved(syntax.getIdentifier().getLocation(), fieldName);
+            return;
+        }
 
         if (typeScope.isFieldOrFunctionDeclared(fieldName)) {
             if (typeScope.isField(fieldName))
@@ -245,6 +292,10 @@ public class Binder {
 
         FieldSymbol field = new FieldSymbol(fieldName, isReadOnly, isShared, visibility, fieldType);
         typeScope.declareField(field);
+    }
+
+    private boolean isReservedFieldName(String fieldName) {
+        return fieldName.equals("toString");
     }
 
     private void bindTypeFieldDeclaration(TypeFieldDeclarationSyntax syntax) {

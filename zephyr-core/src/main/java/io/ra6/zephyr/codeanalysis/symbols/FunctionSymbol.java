@@ -2,6 +2,7 @@ package io.ra6.zephyr.codeanalysis.symbols;
 
 import io.ra6.zephyr.codeanalysis.binding.Visibility;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
 
@@ -9,7 +10,8 @@ public class FunctionSymbol extends CallableSymbol{
     @Getter
     private final boolean isShared;
     @Getter
-    private final Visibility visibility;
+    @Setter
+    private Visibility visibility;
     @Getter
     private final List<ParameterSymbol> parameters;
     @Getter

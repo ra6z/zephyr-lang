@@ -363,4 +363,16 @@ public final class DiagnosticBag {
         String hint = "Make sure the generic count matches the type.";
         reportError(textLocation, message, hint);
     }
+
+    public void reportFieldNameIsReserved(TextLocation location, String fieldName) {
+        String message = "Field name '%s' is reserved.".formatted(fieldName);
+        String hint = "Make sure the field name is not reserved.";
+        reportError(location, message, hint);
+    }
+
+    public void reportInvalidToStringFunction(TextLocation location, String typeName, String cause) {
+        String message = "Invalid 'toString' function for type '%s'. %s".formatted(typeName, cause);
+        String hint = "Make sure the 'toString' function is valid.";
+        reportError(location, message, hint);
+    }
 }
