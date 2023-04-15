@@ -757,7 +757,7 @@ public class Binder {
                 if (path.endsWith(".zph")) {
                     diagnostics.reportImportError(syntax.getStringToken().getLocation(), "Importing non-Zephyr files is not supported yet");
                     path = path.substring(0, path.length() - 4);
-                } else{
+                } else {
                     path = path + ".zph";
                 }
             }
@@ -1035,6 +1035,16 @@ public class Binder {
 
         if (target instanceof BoundThisExpression) {
             TypeSymbol typeSymbol = currentType;
+            if (typeSymbol.isFieldOrFunctionDeclared(member)) {
+                BoundExpression result = bindAndCheckMemberAccess(syntax, target, member, typeSymbol);
+                if (result != null) return result;
+
+                return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
+            }
+        }
+
+        if (target instanceof BoundFunctionCallExpression functionCall) {
+            TypeSymbol typeSymbol = functionCall.getFunction().getType();
             if (typeSymbol.isFieldOrFunctionDeclared(member)) {
                 BoundExpression result = bindAndCheckMemberAccess(syntax, target, member, typeSymbol);
                 if (result != null) return result;

@@ -459,9 +459,23 @@ public class ProgramEvaluator {
         return result;
     }
 
-    private Object evaluateImportedInstanceMethodCall(TypeInstance instance, FunctionSymbol function, List<BoundExpression> arguments) {
-        ProgramEvaluator evaluator = getProgramEvaluator(boundProgramScope.getImportedProgram(instance.getType().getName()));
-        return evaluator.evaluateInstanceMethodCall(instance, function, arguments);
+    private Object evaluateInstanceMethodCallEvaluated(TypeInstance instance, FunctionSymbol function, List<Object> arguments) {
+        locals.push(new VariableTable("function (" + function.getName() + ")"));
+        for (int i = 0; i < function.getParameters().size(); i++) {
+            ParameterSymbol parameter = function.getParameters().get(i);
+            Object value = arguments.get(i);
+
+            VariableSymbol variable = new VariableSymbol(parameter.getName(), true, parameter.getType());
+            assign(variable, value);
+        }
+
+        assign(new VariableSymbol("this", true, instance.getType()), instance);
+        BoundBlockStatement functionBody = boundProgramScope.getTypeScope(instance.getType()).getFunctionScope(function);
+        Object result = evaluateStatement(functionBody);
+        locals.pop();
+
+        if (function.getType() == Types.VOID) return null;
+        return result;
     }
 
     private Object evaluateInstanceMethodCall(TypeInstance instance, FunctionSymbol function, List<BoundExpression> arguments) {
@@ -470,7 +484,14 @@ public class ProgramEvaluator {
         }
 
         if (boundProgramScope.isTypeImported(instance.getType())) {
-            return evaluateImportedInstanceMethodCall(instance, function, arguments);
+            ProgramEvaluator evaluator = getProgramEvaluator(boundProgramScope.getImportedProgram(instance.getType().getName()));
+
+            List<Object> evaluatedArguments = new ArrayList<>();
+            for (BoundExpression argument : arguments) {
+                evaluatedArguments.add(evaluateExpression(argument));
+            }
+
+            return evaluator.evaluateInstanceMethodCallEvaluated(instance, function, evaluatedArguments);
         }
 
         List<Object> evaluatedArguments = new ArrayList<>();
