@@ -22,10 +22,6 @@ public class InternalUnaryOperator extends InternalFunctionBase {
     }
 
     public BoundBlockStatement bindBody() {
-        //VariableSymbol selfVariable = new VariableSymbol("self", true, selfType);
-
-        //BoundExpression selfExpression = BoundNodeFactory.createVariableExpression(null, selfVariable);
-
         return BoundNodeFactory.createBlockStatement(null,
                 BoundNodeFactory.createReturnStatement(null,
                         BoundNodeFactory.createInternalFunctionExpression(null, this, List.of(
@@ -47,8 +43,6 @@ public class InternalUnaryOperator extends InternalFunctionBase {
 
     @Override
     public List<ParameterSymbol> getParameters() {
-        return List.of(
-                // new ParameterSymbol("self", selfType)
-        );
+        return List.of();
     }
 }

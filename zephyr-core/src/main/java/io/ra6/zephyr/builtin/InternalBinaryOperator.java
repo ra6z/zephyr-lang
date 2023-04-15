@@ -25,16 +25,13 @@ public class InternalBinaryOperator extends InternalFunctionBase {
     }
 
     public BoundBlockStatement bindBody() {
-//        VariableSymbol selfVariable = new VariableSymbol("self", true, selfType);
-        VariableSymbol otherVariable = new VariableSymbol("other", true, otherType);
+        VariableSymbol otherVariable = new VariableSymbol(PARAM_OTHER, true, otherType);
 
-//        BoundExpression selfExpression = BoundNodeFactory.createVariableExpression(null, selfVariable);
         BoundExpression otherExpression = BoundNodeFactory.createVariableExpression(null, otherVariable);
 
         return BoundNodeFactory.createBlockStatement(null,
                 BoundNodeFactory.createReturnStatement(null,
                         BoundNodeFactory.createInternalFunctionExpression(null, this, List.of(
-                                //selfExpression,
                                 otherExpression
                         ))
                 )
@@ -54,8 +51,7 @@ public class InternalBinaryOperator extends InternalFunctionBase {
     @Override
     public List<ParameterSymbol> getParameters() {
         return List.of(
-                //new ParameterSymbol("self", selfType),
-                new ParameterSymbol("other", otherType)
+                new ParameterSymbol(PARAM_OTHER, otherType)
         );
     }
 }
