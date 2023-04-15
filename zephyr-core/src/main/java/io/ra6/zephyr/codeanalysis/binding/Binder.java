@@ -2,8 +2,8 @@ package io.ra6.zephyr.codeanalysis.binding;
 
 import io.ra6.zephyr.Triple;
 import io.ra6.zephyr.Tuple;
-import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.builtin.Natives;
+import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.builtin.natives.NativeType;
 import io.ra6.zephyr.builtin.types.BuiltinType;
 import io.ra6.zephyr.codeanalysis.binding.expressions.*;
@@ -723,7 +723,7 @@ public class Binder {
             case NAME_EXPRESSION -> bindNameExpression((NameExpressionSyntax) syntax);
             case ASSIGNMENT_EXPRESSION -> bindAssignmentExpression((AssignmentExpressionSyntax) syntax);
             case ARRAY_ACCESS_EXPRESSION -> bindArrayAccessExpression((ArrayAccessExpressionSyntax) syntax);
-            case METHOD_CALL_EXPRESSION -> bindMethodCallExpression((MethodCallExpressionSyntax) syntax);
+            case FUNCTION_CALL_EXPRESSION -> bindFunctionCallExpression((FunctionCallExpressionSyntax) syntax);
 
             default -> bindErrorExpression(syntax);
         };
@@ -1040,6 +1040,11 @@ public class Binder {
         String typeName = syntax.getQualifiedName().getText();
         TypeSymbol type = programScope.getType(typeName);
 
+        if (type == null) {
+            diagnostics.reportUndefinedType(syntax.getQualifiedName().getLocation(), typeName);
+            return bindErrorExpression(syntax);
+        }
+
         HashMap<String, TypeSymbol> genericTypes = new HashMap<>();
 
         // get generic types
@@ -1102,7 +1107,7 @@ public class Binder {
         return new BoundInstanceCreationExpression(syntax, type, arguments, genericTypes);
     }
 
-    private BoundExpression bindMethodCallExpression(MethodCallExpressionSyntax syntax) {
+    private BoundExpression bindFunctionCallExpression(FunctionCallExpressionSyntax syntax) {
         List<BoundExpression> boundArguments = new ArrayList<>();
         for (ExpressionSyntax argument : syntax.getArguments()) {
             boundArguments.add(bindExpression(argument));

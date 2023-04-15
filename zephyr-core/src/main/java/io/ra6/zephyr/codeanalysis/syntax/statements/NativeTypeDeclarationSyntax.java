@@ -1,5 +1,6 @@
-package io.ra6.zephyr.codeanalysis.syntax;
+package io.ra6.zephyr.codeanalysis.syntax.statements;
 
+import io.ra6.zephyr.codeanalysis.syntax.*;
 import lombok.Getter;
 
 import java.util.List;

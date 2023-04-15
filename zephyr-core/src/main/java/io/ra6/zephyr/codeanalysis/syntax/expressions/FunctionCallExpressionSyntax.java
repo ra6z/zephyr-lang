@@ -6,7 +6,7 @@ import lombok.Getter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MethodCallExpressionSyntax extends ExpressionSyntax {
+public class FunctionCallExpressionSyntax extends ExpressionSyntax {
     @Getter
     private final ExpressionSyntax callee;
     @Getter
@@ -16,7 +16,7 @@ public class MethodCallExpressionSyntax extends ExpressionSyntax {
     @Getter
     private final SyntaxToken rightParenthesisToken;
 
-    public MethodCallExpressionSyntax(SyntaxTree syntaxTree, ExpressionSyntax callee, SyntaxToken leftParenthesisToken, SeparatedSyntaxList<ExpressionSyntax> arguments, SyntaxToken rightParenthesisToken) {
+    public FunctionCallExpressionSyntax(SyntaxTree syntaxTree, ExpressionSyntax callee, SyntaxToken leftParenthesisToken, SeparatedSyntaxList<ExpressionSyntax> arguments, SyntaxToken rightParenthesisToken) {
         super(syntaxTree);
         this.callee = callee;
         this.leftParenthesisToken = leftParenthesisToken;
@@ -26,7 +26,7 @@ public class MethodCallExpressionSyntax extends ExpressionSyntax {
 
     @Override
     public SyntaxKind getKind() {
-        return SyntaxKind.METHOD_CALL_EXPRESSION;
+        return SyntaxKind.FUNCTION_CALL_EXPRESSION;
     }
 
     @Override

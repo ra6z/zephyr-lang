@@ -1,8 +1,5 @@
-package io.ra6.zephyr.codeanalysis.binding;
+package io.ra6.zephyr.codeanalysis.symbols;
 
-import io.ra6.zephyr.codeanalysis.symbols.Symbol;
-import io.ra6.zephyr.codeanalysis.symbols.SymbolKind;
-import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 import lombok.Getter;
 
 public class ExportSymbol extends Symbol {

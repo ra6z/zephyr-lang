@@ -298,12 +298,6 @@ public final class DiagnosticBag {
         reportError(location, message, hint);
     }
 
-    public void reportArgumentMismatch(TextLocation location, FunctionSymbol function, List<BoundExpression> boundArguments) {
-        String message = "Argument mismatch for function '%s'. Expected %d arguments but found %d.".formatted(function, function.getParameters().size(), boundArguments.size());
-        String hint = "Make sure the arguments match the function signature.";
-        reportError(location, message, hint);
-    }
-
     public void reportInvalidMemberAccess(TextLocation location, SyntaxNode syntax) {
         String message = "Expression of type '%s' cannot be used as a member access target.".formatted(syntax.getClass().getName());
         String hint = "Make sure the expression is a variable or a field access.";
@@ -343,12 +337,6 @@ public final class DiagnosticBag {
     public void reportCannotIndex(TextLocation location, TypeSymbol type) {
         String message = "Cannot index type '%s'.".formatted(type);
         String hint = "Make sure the type is indexable.";
-        reportError(location, message, hint);
-    }
-
-    public void reportGenericParameterAlreadyDeclared(TextLocation location, String text) {
-        String message = "Generic parameter '%s' is already declared in this scope.".formatted(text);
-        String hint = "Make sure each generic parameter is declared only once.";
         reportError(location, message, hint);
     }
 

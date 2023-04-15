@@ -1,5 +1,7 @@
-package io.ra6.zephyr.codeanalysis.binding;
+package io.ra6.zephyr.codeanalysis.binding.expressions;
 
+import io.ra6.zephyr.codeanalysis.binding.BoundExpression;
+import io.ra6.zephyr.codeanalysis.binding.BoundNodeKind;
 import io.ra6.zephyr.codeanalysis.symbols.ArrayTypeSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 import io.ra6.zephyr.codeanalysis.syntax.SyntaxNode;

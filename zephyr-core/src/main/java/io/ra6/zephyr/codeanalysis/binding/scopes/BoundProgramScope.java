@@ -1,6 +1,6 @@
 package io.ra6.zephyr.codeanalysis.binding.scopes;
 
-import io.ra6.zephyr.codeanalysis.binding.ExportSymbol;
+import io.ra6.zephyr.codeanalysis.symbols.ExportSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.SymbolTable;
 import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 import lombok.Getter;

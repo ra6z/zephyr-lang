@@ -1,5 +1,6 @@
 package io.ra6.zephyr.codeanalysis.binding;
 
+import io.ra6.zephyr.codeanalysis.binding.expressions.BoundInternalFunctionExpression;
 import io.ra6.zephyr.codeanalysis.binding.expressions.BoundLiteralExpression;
 import io.ra6.zephyr.codeanalysis.binding.expressions.BoundVariableExpression;
 import io.ra6.zephyr.codeanalysis.binding.statements.*;

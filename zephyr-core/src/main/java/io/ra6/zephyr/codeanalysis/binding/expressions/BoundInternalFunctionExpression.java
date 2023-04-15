@@ -1,6 +1,8 @@
-package io.ra6.zephyr.codeanalysis.binding;
+package io.ra6.zephyr.codeanalysis.binding.expressions;
 
 import io.ra6.zephyr.builtin.IFunctionBase;
+import io.ra6.zephyr.codeanalysis.binding.BoundExpression;
+import io.ra6.zephyr.codeanalysis.binding.BoundNodeKind;
 import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 import io.ra6.zephyr.codeanalysis.syntax.SyntaxNode;
 import lombok.Getter;

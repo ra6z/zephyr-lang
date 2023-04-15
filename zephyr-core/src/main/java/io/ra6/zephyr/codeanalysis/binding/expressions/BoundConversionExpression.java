@@ -1,5 +1,7 @@
-package io.ra6.zephyr.codeanalysis.binding;
+package io.ra6.zephyr.codeanalysis.binding.expressions;
 
+import io.ra6.zephyr.codeanalysis.binding.BoundExpression;
+import io.ra6.zephyr.codeanalysis.binding.BoundNodeKind;
 import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 import io.ra6.zephyr.codeanalysis.syntax.SyntaxNode;
 import lombok.Getter;
@@ -12,7 +14,7 @@ public class BoundConversionExpression extends BoundExpression {
     @Getter
     private final BoundExpression expression;
 
-    protected BoundConversionExpression(SyntaxNode syntax, TypeSymbol boundGenericType, TypeSymbol genericType, BoundExpression expression) {
+    public BoundConversionExpression(SyntaxNode syntax, TypeSymbol boundGenericType, TypeSymbol genericType, BoundExpression expression) {
         super(syntax);
         this.boundGenericType = boundGenericType;
         this.genericType = genericType;

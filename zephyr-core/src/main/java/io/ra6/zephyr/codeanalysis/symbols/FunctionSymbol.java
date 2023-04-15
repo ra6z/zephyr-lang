@@ -1,6 +1,5 @@
 package io.ra6.zephyr.codeanalysis.symbols;
 
-import io.ra6.zephyr.codeanalysis.binding.BoundExpression;
 import io.ra6.zephyr.codeanalysis.binding.Visibility;
 import lombok.Getter;
 

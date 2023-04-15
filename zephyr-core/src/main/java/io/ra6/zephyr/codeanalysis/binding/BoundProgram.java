@@ -1,6 +1,7 @@
 package io.ra6.zephyr.codeanalysis.binding;
 
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundProgramScope;
+import io.ra6.zephyr.codeanalysis.symbols.ExportSymbol;
 import io.ra6.zephyr.diagnostic.DiagnosticBag;
 import lombok.Getter;
 

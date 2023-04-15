@@ -723,7 +723,7 @@ public final class Parser {
             SyntaxToken leftParenthesis = nextToken();
             SeparatedSyntaxList<ExpressionSyntax> arguments = parseArguments();
             SyntaxToken rightParenthesis = matchToken(SyntaxKind.CLOSE_PARENTHESIS_TOKEN);
-            return new MethodCallExpressionSyntax(syntaxTree, expression, leftParenthesis, arguments, rightParenthesis);
+            return new FunctionCallExpressionSyntax(syntaxTree, expression, leftParenthesis, arguments, rightParenthesis);
         }
 
         return expression;
@@ -796,7 +796,7 @@ public final class Parser {
             SyntaxToken leftParenthesis = nextToken();
             SeparatedSyntaxList<ExpressionSyntax> arguments = parseArguments();
             SyntaxToken rightParenthesis = matchToken(SyntaxKind.CLOSE_PARENTHESIS_TOKEN);
-            return new MethodCallExpressionSyntax(syntaxTree, expression, leftParenthesis, arguments, rightParenthesis);
+            return new FunctionCallExpressionSyntax(syntaxTree, expression, leftParenthesis, arguments, rightParenthesis);
         }
 
         return expression;

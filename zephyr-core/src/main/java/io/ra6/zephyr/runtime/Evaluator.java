@@ -3,7 +3,7 @@ package io.ra6.zephyr.runtime;
 import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.codeanalysis.binding.Binder;
 import io.ra6.zephyr.codeanalysis.binding.BoundProgram;
-import io.ra6.zephyr.codeanalysis.binding.ExportSymbol;
+import io.ra6.zephyr.codeanalysis.symbols.ExportSymbol;
 import io.ra6.zephyr.codeanalysis.binding.statements.BoundBlockStatement;
 import io.ra6.zephyr.codeanalysis.symbols.ArrayTypeSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.FunctionSymbol;
