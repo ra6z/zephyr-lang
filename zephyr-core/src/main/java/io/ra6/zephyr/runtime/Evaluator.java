@@ -1,6 +1,7 @@
 package io.ra6.zephyr.runtime;
 
 import io.ra6.zephyr.builtin.BuiltinTypes;
+import io.ra6.zephyr.codeanalysis.binding.Binder;
 import io.ra6.zephyr.codeanalysis.binding.BoundProgram;
 import io.ra6.zephyr.codeanalysis.binding.ExportSymbol;
 import io.ra6.zephyr.codeanalysis.binding.statements.BoundBlockStatement;
@@ -8,12 +9,19 @@ import io.ra6.zephyr.codeanalysis.symbols.ArrayTypeSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.FunctionSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.VariableSymbol;
+import io.ra6.zephyr.codeanalysis.syntax.SyntaxTree;
+import io.ra6.zephyr.compiling.CompilerFlags;
+import io.ra6.zephyr.library.ZephyrLibrary;
+import io.ra6.zephyr.library.ZephyrLibraryMetadata;
+import io.ra6.zephyr.sourcefile.SourceText;
 import io.ra6.zephyr.writer.DiagnosticWriter;
+import io.ra6.zephyr.writer.SyntaxWriter;
 import lombok.experimental.ExtensionMethod;
 
+import java.io.IOException;
 import java.util.List;
 
-@ExtensionMethod({DiagnosticWriter.class})
+@ExtensionMethod({DiagnosticWriter.class,  SyntaxWriter.class})
 public final class Evaluator {
     private final String[] args;
 
@@ -23,8 +31,26 @@ public final class Evaluator {
         this.args = args;
         this.mainProgramEvaluator = new ProgramEvaluator(boundProgram.getProgramScope());
     }
+    public static EvaluationResult run(String inputPath, String standardLibraryPath, int flags, String[] args) {
+        try {
+            ZephyrLibraryMetadata standardLibraryMeta = new ZephyrLibraryMetadata("Standard Library", "std", standardLibraryPath, "0.0.1", "rasix", "");
+            ZephyrLibrary standardLibrary = new ZephyrLibrary(standardLibraryMeta);
 
-    public static EvaluationResult evaluate(BoundProgram boundProgram, String[] args) {
+            SourceText mainSourceText = SourceText.fromFile(inputPath);
+            SyntaxTree mainTree = SyntaxTree.parse(mainSourceText);
+
+            if (CompilerFlags.isFlagSet(flags, CompilerFlags.PRINT_TREE)) System.out.printTree(mainTree);
+            if (CompilerFlags.isFlagSet(flags, CompilerFlags.VERBOSE)) RuntimeLogger.DEBUG = true;
+
+            Binder binder = new Binder(mainTree, standardLibrary);
+            BoundProgram boundProgram = binder.bindProgram();
+
+            return Evaluator.evaluate(boundProgram, args);
+        } catch (IOException e) {
+            return new EvaluationResult(-1);
+        }
+    }
+    private static EvaluationResult evaluate(BoundProgram boundProgram, String[] args) {
         Evaluator evaluator = new Evaluator(boundProgram, args);
 
         if (boundProgram.getDiagnostics().hasErrors()) {

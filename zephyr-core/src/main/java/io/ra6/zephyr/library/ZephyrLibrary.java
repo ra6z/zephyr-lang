@@ -1,9 +1,6 @@
 package io.ra6.zephyr.library;
 
-import io.ra6.zephyr.codeanalysis.binding.Binder;
 import io.ra6.zephyr.codeanalysis.binding.BoundProgram;
-import io.ra6.zephyr.codeanalysis.syntax.SyntaxTree;
-import io.ra6.zephyr.sourcefile.SourceText;
 
 import java.io.File;
 import java.util.HashMap;
@@ -17,10 +14,10 @@ public class ZephyrLibrary {
     public ZephyrLibrary(ZephyrLibraryMetadata metadata) {
         this.metadata = metadata;
 
-        loadLibrary();
+        indexLibrary();
     }
 
-    private void loadLibrary() {
+    private void indexLibrary() {
         File libraryDirectory = new File(metadata.path());
         if (!libraryDirectory.isDirectory()) {
             throw new RuntimeException("Library path is not a directory");
@@ -33,14 +30,14 @@ public class ZephyrLibrary {
 
         for (File file : libraryFiles) {
             if (file.isDirectory()) {
-                loadLibraryDirectory(file);
+                indexLibraryDirectory(file);
             } else {
-                loadLibraryFile(file);
+                indexLibraryFile(file);
             }
         }
     }
 
-    private void loadLibraryDirectory(File file) {
+    private void indexLibraryDirectory(File file) {
         if (!file.isDirectory()) {
             throw new RuntimeException("Library directory is not a directory");
         }
@@ -52,14 +49,14 @@ public class ZephyrLibrary {
 
         for (File libraryFile : libraryFiles) {
             if (libraryFile.isDirectory()) {
-                loadLibraryDirectory(libraryFile);
+                indexLibraryDirectory(libraryFile);
             } else {
-                loadLibraryFile(libraryFile);
+                indexLibraryFile(libraryFile);
             }
         }
     }
 
-    private void loadLibraryFile(File file) {
+    private void indexLibraryFile(File file) {
         if (!file.isFile()) {
             throw new RuntimeException("Library file is not a file");
         }
@@ -68,7 +65,7 @@ public class ZephyrLibrary {
             return;
         }
 
-        String path = file.getPath().substring(metadata.path().length() + 1);
+        String path = file.getPath().substring(metadata.path().length() + 1).replace("\\", "/");
         String name = "%s:%s".formatted(metadata.prefix(), path.substring(0, path.length() - 4).replace("\\", "/"));
         libraryMapping.put(name, file.getPath());
     }

@@ -1,8 +1,8 @@
 package io.ra6.zephyr;
 
-import io.ra6.zephyr.compiling.Compiler;
 import io.ra6.zephyr.compiling.CompilerFlags;
 import io.ra6.zephyr.runtime.EvaluationResult;
+import io.ra6.zephyr.runtime.Evaluator;
 import picocli.CommandLine;
 
 import java.util.concurrent.Callable;
@@ -39,8 +39,7 @@ public class ZephyrRun implements Callable<Void> {
         if (verbose) flags |= CompilerFlags.VERBOSE;
         if (printTree) flags |= CompilerFlags.PRINT_TREE;
 
-        Compiler compiler = new Compiler(standardLibraryPath);
-        EvaluationResult result = compiler.run(this.sourceFile, flags, additionalArgs);
+        EvaluationResult result = Evaluator.run(this.sourceFile, standardLibraryPath, flags, additionalArgs);
 
         System.out.printf("Program finished with exit code %s%n", result.getExitCode());
 

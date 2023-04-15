@@ -15,8 +15,9 @@ import lombok.experimental.ExtensionMethod;
 
 import java.io.IOException;
 
-@ExtensionMethod({DiagnosticWriter.class, SyntaxWriter.class})
+@ExtensionMethod({DiagnosticWriter.class})
 public class Compiler {
+    @SuppressWarnings({"unused", "FieldCanBeLocal"})
     private final ZephyrLibrary standardLibrary;
 
     public Compiler(String standardLibraryPath) {
@@ -27,20 +28,5 @@ public class Compiler {
         throw new RuntimeException("Not implemented yet");
     }
 
-    public EvaluationResult run(String inputPath, int flags, String[] args) {
-        try {
-            SourceText mainSourceText = SourceText.fromFile(inputPath);
-            SyntaxTree mainTree = SyntaxTree.parse(mainSourceText);
 
-            if (CompilerFlags.isFlagSet(flags, CompilerFlags.PRINT_TREE)) System.out.printTree(mainTree);
-            if (CompilerFlags.isFlagSet(flags, CompilerFlags.VERBOSE)) RuntimeLogger.DEBUG = true;
-
-            Binder binder = new Binder(mainTree, standardLibrary);
-            BoundProgram boundProgram = binder.bindProgram();
-
-            return Evaluator.evaluate(boundProgram, args);
-        } catch (IOException e) {
-            return new EvaluationResult(-1);
-        }
-    }
 }
