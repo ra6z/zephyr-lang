@@ -16,16 +16,20 @@ import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
-public class InternalFunction extends InternalFunctionBase {
+public class InternalFunction implements IFunctionBase {
     private final String functionName;
     private final boolean isShared;
     private final Visibility visibility;
     private final List<ParameterSymbol> parameters;
     private final TypeSymbol returnType;
-    private final IFunction functionBody;
+    private final ICallable functionBody;
+    private FunctionSymbol functionSymbol;
 
     public FunctionSymbol getFunctionSymbol() {
-        return new FunctionSymbol(functionName, isShared, visibility, parameters, returnType);
+        // this is to make sure the function symbol is only created once
+        if (functionSymbol == null)
+            functionSymbol = new FunctionSymbol(functionName, isShared, visibility, parameters, returnType);
+        return functionSymbol;
     }
 
     public BoundBlockStatement bindBody() {
@@ -43,7 +47,7 @@ public class InternalFunction extends InternalFunctionBase {
     }
 
     @Override
-    public IFunction getFunctionBody() {
+    public ICallable getFunctionBody() {
         return functionBody;
     }
 

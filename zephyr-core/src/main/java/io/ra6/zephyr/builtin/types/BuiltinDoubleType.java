@@ -3,7 +3,7 @@ package io.ra6.zephyr.builtin.types;
 import io.ra6.zephyr.codeanalysis.binding.BoundNodeFactory;
 import io.ra6.zephyr.codeanalysis.binding.Visibility;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
-import io.ra6.zephyr.builtin.BuiltinTypes;
+import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.builtin.InternalBinaryOperator;
 import io.ra6.zephyr.builtin.InternalFunction;
 import io.ra6.zephyr.codeanalysis.symbols.BinaryOperatorSymbol;
@@ -13,21 +13,24 @@ import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 
 import java.util.List;
 
+import static io.ra6.zephyr.builtin.IFunctionBase.PARAM_OTHER;
+import static io.ra6.zephyr.builtin.IFunctionBase.PARAM_THIS;
+
 public class BuiltinDoubleType extends BuiltinType {
 
-    private final BoundTypeScope typeScope = new BoundTypeScope(null, BuiltinTypes.DOUBLE);
+    private final BoundTypeScope typeScope = new BoundTypeScope(null, Types.DOUBLE);
 
-    private final FieldSymbol min = createPubSharedField("min", BuiltinTypes.DOUBLE, true);
-    private final FieldSymbol max = createPubSharedField("max", BuiltinTypes.DOUBLE, true);
-    private final FieldSymbol size = createPubSharedField("size", BuiltinTypes.DOUBLE, true);
+    private final FieldSymbol min = createPubSharedField("min", Types.DOUBLE, true);
+    private final FieldSymbol max = createPubSharedField("max", Types.DOUBLE, true);
+    private final FieldSymbol size = createPubSharedField("size", Types.DOUBLE, true);
 
-    private final InternalFunction fromInt = new InternalFunction("fromInt", true, Visibility.PUBLIC, List.of(new ParameterSymbol("other", BuiltinTypes.INT)), BuiltinTypes.DOUBLE, args -> {
-        int otherValue = (int) args.get("other");
+    private final InternalFunction fromInt = new InternalFunction("fromInt", true, Visibility.PUBLIC, List.of(new ParameterSymbol(PARAM_OTHER, Types.INT)), Types.DOUBLE, args -> {
+        int otherValue = (int) args.get(PARAM_OTHER);
         return (double) otherValue;
     });
 
-    private final InternalFunction toString = new InternalFunction("toString", false, Visibility.PUBLIC, List.of(new ParameterSymbol("other", BuiltinTypes.DOUBLE)), BuiltinTypes.STRING, args -> {
-        double otherValue = (double) args.get("this");
+    private final InternalFunction toString = new InternalFunction("toString", false, Visibility.PUBLIC, List.of(new ParameterSymbol(PARAM_OTHER, Types.DOUBLE)), Types.STRING, args -> {
+        double otherValue = (double) args.get(PARAM_THIS);
         return Double.toString(otherValue);
     });
 
@@ -57,41 +60,41 @@ public class BuiltinDoubleType extends BuiltinType {
 
     @Override
     protected void declareFunctions() {
-        typeScope.declareFunction(fromInt.getFunctionSymbol());
-        typeScope.declareFunction(toString.getFunctionSymbol());
+        typeScope.declareFunction(fromInt);
+        typeScope.declareFunction(toString);
     }
 
     @Override
     protected void defineFunctions() {
-        typeScope.defineFunction(fromInt.getFunctionSymbol(), fromInt.bindBody());
-        typeScope.defineFunction(toString.getFunctionSymbol(), toString.bindBody());
+        typeScope.defineFunction(fromInt);
+        typeScope.defineFunction(toString);
     }
 
     @Override
     protected void declareBinaryOperators() {
-        typeScope.declareBinaryOperator(createBinaryOperator("+", BuiltinTypes.DOUBLE, BuiltinTypes.DOUBLE));
-        typeScope.declareBinaryOperator(createBinaryOperator("-", BuiltinTypes.DOUBLE, BuiltinTypes.DOUBLE));
-        typeScope.declareBinaryOperator(createBinaryOperator("*", BuiltinTypes.DOUBLE, BuiltinTypes.DOUBLE));
-        typeScope.declareBinaryOperator(createBinaryOperator("/", BuiltinTypes.DOUBLE, BuiltinTypes.DOUBLE));
-        typeScope.declareBinaryOperator(createBinaryOperator("%", BuiltinTypes.DOUBLE, BuiltinTypes.DOUBLE));
-        typeScope.declareBinaryOperator(createBinaryOperator("==", BuiltinTypes.DOUBLE, BuiltinTypes.BOOL));
-        typeScope.declareBinaryOperator(createBinaryOperator("!=", BuiltinTypes.DOUBLE, BuiltinTypes.BOOL));
-        typeScope.declareBinaryOperator(createBinaryOperator("<", BuiltinTypes.DOUBLE, BuiltinTypes.BOOL));
-        typeScope.declareBinaryOperator(createBinaryOperator(">", BuiltinTypes.DOUBLE, BuiltinTypes.BOOL));
-        typeScope.declareBinaryOperator(createBinaryOperator("<=", BuiltinTypes.DOUBLE, BuiltinTypes.BOOL));
-        typeScope.declareBinaryOperator(createBinaryOperator(">=", BuiltinTypes.DOUBLE, BuiltinTypes.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator("+", Types.DOUBLE, Types.DOUBLE));
+        typeScope.declareBinaryOperator(createBinaryOperator("-", Types.DOUBLE, Types.DOUBLE));
+        typeScope.declareBinaryOperator(createBinaryOperator("*", Types.DOUBLE, Types.DOUBLE));
+        typeScope.declareBinaryOperator(createBinaryOperator("/", Types.DOUBLE, Types.DOUBLE));
+        typeScope.declareBinaryOperator(createBinaryOperator("%", Types.DOUBLE, Types.DOUBLE));
+        typeScope.declareBinaryOperator(createBinaryOperator("==", Types.DOUBLE, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator("!=", Types.DOUBLE, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator("<", Types.DOUBLE, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator(">", Types.DOUBLE, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator("<=", Types.DOUBLE, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator(">=", Types.DOUBLE, Types.BOOL));
 
-        typeScope.declareBinaryOperator(createBinaryOperator("+", BuiltinTypes.INT, BuiltinTypes.DOUBLE));
-        typeScope.declareBinaryOperator(createBinaryOperator("-", BuiltinTypes.INT, BuiltinTypes.DOUBLE));
-        typeScope.declareBinaryOperator(createBinaryOperator("*", BuiltinTypes.INT, BuiltinTypes.DOUBLE));
-        typeScope.declareBinaryOperator(createBinaryOperator("/", BuiltinTypes.INT, BuiltinTypes.DOUBLE));
-        typeScope.declareBinaryOperator(createBinaryOperator("%", BuiltinTypes.INT, BuiltinTypes.DOUBLE));
-        typeScope.declareBinaryOperator(createBinaryOperator("==", BuiltinTypes.INT, BuiltinTypes.BOOL));
-        typeScope.declareBinaryOperator(createBinaryOperator("!=", BuiltinTypes.INT, BuiltinTypes.BOOL));
-        typeScope.declareBinaryOperator(createBinaryOperator("<", BuiltinTypes.INT, BuiltinTypes.BOOL));
-        typeScope.declareBinaryOperator(createBinaryOperator(">", BuiltinTypes.INT, BuiltinTypes.BOOL));
-        typeScope.declareBinaryOperator(createBinaryOperator("<=", BuiltinTypes.INT, BuiltinTypes.BOOL));
-        typeScope.declareBinaryOperator(createBinaryOperator(">=", BuiltinTypes.INT, BuiltinTypes.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator("+", Types.INT, Types.DOUBLE));
+        typeScope.declareBinaryOperator(createBinaryOperator("-", Types.INT, Types.DOUBLE));
+        typeScope.declareBinaryOperator(createBinaryOperator("*", Types.INT, Types.DOUBLE));
+        typeScope.declareBinaryOperator(createBinaryOperator("/", Types.INT, Types.DOUBLE));
+        typeScope.declareBinaryOperator(createBinaryOperator("%", Types.INT, Types.DOUBLE));
+        typeScope.declareBinaryOperator(createBinaryOperator("==", Types.INT, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator("!=", Types.INT, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator("<", Types.INT, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator(">", Types.INT, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator("<=", Types.INT, Types.BOOL));
+        typeScope.declareBinaryOperator(createBinaryOperator(">=", Types.INT, Types.BOOL));
     }
 
     @Override
@@ -100,10 +103,10 @@ public class BuiltinDoubleType extends BuiltinType {
             TypeSymbol otherType = symbol.getOtherType();
 
             InternalBinaryOperator ibo = new InternalBinaryOperator(symbol.getName(), symbol.getOtherType(), symbol.getReturnType(), args -> {
-                double selfValue = (double) args.get("this");
+                double selfValue = (double) args.get(PARAM_THIS);
 
-                if (otherType == BuiltinTypes.INT) {
-                    int otherValue = (int) args.get("other");
+                if (otherType == Types.INT) {
+                    int otherValue = (int) args.get(PARAM_OTHER);
 
                     return switch (symbol.getName()) {
                         case "+" -> selfValue + otherValue;
@@ -120,8 +123,8 @@ public class BuiltinDoubleType extends BuiltinType {
                         case "<=" -> selfValue <= otherValue;
                         default -> throw new RuntimeException("Unexpected binary operator: " + symbol.getName());
                     };
-                } else if (otherType == BuiltinTypes.DOUBLE) {
-                    double otherValue = (double) args.get("other");
+                } else if (otherType == Types.DOUBLE) {
+                    double otherValue = (double) args.get(PARAM_OTHER);
                     return switch (symbol.getName()) {
                         case "+" -> selfValue + otherValue;
                         case "-" -> selfValue - otherValue;
@@ -158,7 +161,7 @@ public class BuiltinDoubleType extends BuiltinType {
 
     @Override
     public TypeSymbol getTypeSymbol() {
-        return BuiltinTypes.DOUBLE;
+        return Types.DOUBLE;
     }
 
     @Override

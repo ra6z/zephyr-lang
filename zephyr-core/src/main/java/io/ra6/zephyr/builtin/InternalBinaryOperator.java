@@ -14,14 +14,14 @@ import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
-public class InternalBinaryOperator extends InternalFunctionBase {
+public class InternalBinaryOperator implements IFunctionBase {
     private final String operator;
     private final TypeSymbol otherType;
     private final TypeSymbol resultType;
-    private final IFunction functionBody;
+    private final ICallable functionBody;
 
     public BinaryOperatorSymbol getBinaryOperatorSymbol() {
-        return new BinaryOperatorSymbol(operator, "other", otherType, resultType);
+        return new BinaryOperatorSymbol(operator, PARAM_OTHER, otherType, resultType);
     }
 
     public BoundBlockStatement bindBody() {
@@ -39,7 +39,7 @@ public class InternalBinaryOperator extends InternalFunctionBase {
     }
 
     @Override
-    public IFunction getFunctionBody() {
+    public ICallable getFunctionBody() {
         return functionBody;
     }
 

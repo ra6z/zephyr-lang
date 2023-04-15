@@ -1,12 +1,12 @@
 package io.ra6.zephyr.builtin.types;
 
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
-import io.ra6.zephyr.builtin.BuiltinTypes;
+import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 
 public class BuiltinVoidType extends BuiltinType {
 
-    private final BoundTypeScope typeScope = new BoundTypeScope(null, BuiltinTypes.VOID);
+    private final BoundTypeScope typeScope = new BoundTypeScope(null, Types.VOID);
 
     @Override
     protected void declareFields() {
@@ -60,7 +60,7 @@ public class BuiltinVoidType extends BuiltinType {
 
     @Override
     public TypeSymbol getTypeSymbol() {
-        return BuiltinTypes.VOID;
+        return Types.VOID;
     }
 
     @Override

@@ -1,6 +1,6 @@
 package io.ra6.zephyr.runtime;
 
-import io.ra6.zephyr.builtin.BuiltinTypes;
+import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.codeanalysis.binding.Binder;
 import io.ra6.zephyr.codeanalysis.binding.BoundProgram;
 import io.ra6.zephyr.codeanalysis.binding.ExportSymbol;
@@ -81,8 +81,8 @@ public final class Evaluator {
         boolean hasArgs = false;
 
         if (main.getParameters().size() == 2) {
-            if (main.getParameters().get(0).getType().equals(BuiltinTypes.INT) &&
-                    main.getParameters().get(1).getType().equals(new ArrayTypeSymbol(BuiltinTypes.STRING))) {
+            if (main.getParameters().get(0).getType().equals(Types.INT) &&
+                    main.getParameters().get(1).getType().equals(new ArrayTypeSymbol(Types.STRING))) {
                 hasArgs = true;
             } else {
                 System.out.println("Main function has invalid parameters. Need a main function with parameters (int, str[]) or no parameters to run the program.");
@@ -103,9 +103,9 @@ public final class Evaluator {
     private Object evaluateEntryMethod(TypeSymbol entryType, FunctionSymbol mainFunction) {
         mainProgramEvaluator.getLocals().push(new VariableTable("<entry>"));
 
-        VariableSymbol argcSymbol = new VariableSymbol("argc", true, BuiltinTypes.INT);
+        VariableSymbol argcSymbol = new VariableSymbol("argc", true, Types.INT);
         // TODO: add array
-        VariableSymbol argvSymbol = new VariableSymbol("argv", true, new ArrayTypeSymbol(BuiltinTypes.STRING));
+        VariableSymbol argvSymbol = new VariableSymbol("argv", true, new ArrayTypeSymbol(Types.STRING));
 
         mainProgramEvaluator.assign(argcSymbol, args.length);
         mainProgramEvaluator.assign(argvSymbol, List.of(args));
@@ -114,7 +114,7 @@ public final class Evaluator {
         mainProgramEvaluator.evaluateStatement(mainFunctionBody);
         mainProgramEvaluator.getLocals().pop();
 
-        if (mainFunction.getType() != BuiltinTypes.VOID) return mainProgramEvaluator.getLastValue();
+        if (mainFunction.getType() != Types.VOID) return mainProgramEvaluator.getLastValue();
         return null;
     }
 

@@ -2,7 +2,7 @@ package io.ra6.zephyr.codeanalysis.binding.expressions;
 
 import io.ra6.zephyr.codeanalysis.binding.BoundExpression;
 import io.ra6.zephyr.codeanalysis.binding.BoundNodeKind;
-import io.ra6.zephyr.builtin.BuiltinTypes;
+import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.codeanalysis.symbols.*;
 import io.ra6.zephyr.codeanalysis.syntax.SyntaxNode;
 import lombok.Getter;
@@ -30,7 +30,7 @@ public class BoundMemberAccessExpression extends BoundExpression {
         if (member instanceof FunctionSymbol) {
             return ((FunctionSymbol) member).getType();
         }
-        return BuiltinTypes.ERROR;
+        return Types.ERROR;
     }
 
     @Override

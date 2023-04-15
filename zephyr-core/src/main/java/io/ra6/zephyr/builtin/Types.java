@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class BuiltinTypes {
+public class Types {
     public static final TypeSymbol VOID = new TypeSymbol("void");
     public static final TypeSymbol INT = new TypeSymbol("int");
     public static final TypeSymbol STRING = new TypeSymbol("str");

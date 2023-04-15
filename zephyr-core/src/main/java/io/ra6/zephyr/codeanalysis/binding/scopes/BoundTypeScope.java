@@ -1,5 +1,6 @@
 package io.ra6.zephyr.codeanalysis.binding.scopes;
 
+import io.ra6.zephyr.builtin.InternalFunction;
 import io.ra6.zephyr.codeanalysis.binding.BoundExpression;
 import io.ra6.zephyr.codeanalysis.binding.statements.BoundBlockStatement;
 import io.ra6.zephyr.codeanalysis.symbols.*;
@@ -122,6 +123,10 @@ public class BoundTypeScope extends BoundScope {
         declaredFieldsAndFunctions.add(function);
     }
 
+    public void declareFunction(InternalFunction function) {
+        declareFunction(function.getFunctionSymbol());
+    }
+
     public FieldSymbol getField(String fieldName) {
         return declaredFieldsAndFunctions.stream()
                 .filter(f -> f.getName().equals(fieldName) && f.getKind() == SymbolKind.FIELD)
@@ -144,6 +149,10 @@ public class BoundTypeScope extends BoundScope {
 
     public void defineFunction(FunctionSymbol function, BoundBlockStatement body) {
         functionDefinitions.put(function, body);
+    }
+
+    public void defineFunction(InternalFunction function) {
+        defineFunction(function.getFunctionSymbol(), function.bindBody());
     }
 
     public BoundBlockStatement getFunctionScope(FunctionSymbol function) {

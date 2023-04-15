@@ -12,10 +12,10 @@ import java.util.List;
 
 @Getter
 @RequiredArgsConstructor
-public class InternalUnaryOperator extends InternalFunctionBase {
+public class InternalUnaryOperator implements IFunctionBase {
     private final String operator;
     private final TypeSymbol resultType;
-    private final IFunction functionBody;
+    private final ICallable functionBody;
 
     public UnaryOperatorSymbol getUnaryOperatorSymbol() {
         return new UnaryOperatorSymbol(operator, resultType);
@@ -32,7 +32,7 @@ public class InternalUnaryOperator extends InternalFunctionBase {
     }
 
     @Override
-    public IFunction getFunctionBody() {
+    public ICallable getFunctionBody() {
         return functionBody;
     }
 

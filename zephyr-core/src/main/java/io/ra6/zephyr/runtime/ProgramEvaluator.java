@@ -1,9 +1,9 @@
 package io.ra6.zephyr.runtime;
 
-import io.ra6.zephyr.builtin.BuiltinTypes;
 import io.ra6.zephyr.builtin.InternalBinaryOperator;
 import io.ra6.zephyr.builtin.InternalFunction;
 import io.ra6.zephyr.builtin.InternalUnaryOperator;
+import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.codeanalysis.binding.*;
 import io.ra6.zephyr.codeanalysis.binding.expressions.*;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundProgramScope;
@@ -243,7 +243,7 @@ public class ProgramEvaluator {
             localVariables.put(parameter.getName(), arguments.get(i));
         }
 
-        return expression.getFunction().getFunctionBody().invoke(localVariables);
+        return expression.getFunction().getFunctionBody().call(localVariables);
     }
 
     private Object evaluateBinaryExpression(BoundBinaryExpression expression) {
@@ -399,7 +399,7 @@ public class ProgramEvaluator {
             VariableSymbol variable = variableExpression.getVariable();
 
             // check if variable type is builtin type
-            if (BuiltinTypes.isBuiltinType(variable.getType())) {
+            if (Types.isBuiltinType(variable.getType())) {
                 return evaluateBuiltinFunctionCall(callee, variable.getType(), expression.getFunction(), expression.getArguments());
             }
         }
@@ -414,13 +414,13 @@ public class ProgramEvaluator {
         }
 
         if (callee instanceof BoundLiteralExpression literalExpression) {
-            if (BuiltinTypes.isValidLiteralType(literalExpression.getType())) {
+            if (Types.isValidLiteralType(literalExpression.getType())) {
                 return evaluateBuiltinFunctionCall(callee, literalExpression.getType(), expression.getFunction(), expression.getArguments());
             }
         }
 
-        if (BuiltinTypes.isValidLiteralType(calleeValue.getClass())) {
-            return evaluateBuiltinFunctionCall(callee, BuiltinTypes.getLiteralType(calleeValue.getClass()), expression.getFunction(), expression.getArguments());
+        if (Types.isValidLiteralType(calleeValue.getClass())) {
+            return evaluateBuiltinFunctionCall(callee, Types.getLiteralType(calleeValue.getClass()), expression.getFunction(), expression.getArguments());
         }
 
         if (calleeValue instanceof ArrayList<?>) {
@@ -493,7 +493,7 @@ public class ProgramEvaluator {
         Object result = evaluateStatement(functionBody);
         locals.pop();
 
-        if (function.getType() == BuiltinTypes.VOID) return null;
+        if (function.getType() == Types.VOID) return null;
         return result;
     }
 

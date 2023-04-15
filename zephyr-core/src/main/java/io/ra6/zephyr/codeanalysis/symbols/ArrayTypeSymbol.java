@@ -1,6 +1,6 @@
 package io.ra6.zephyr.codeanalysis.symbols;
 
-import io.ra6.zephyr.builtin.BuiltinTypes;
+import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.codeanalysis.binding.Visibility;
 import lombok.Getter;
 
@@ -16,7 +16,7 @@ public class ArrayTypeSymbol extends TypeSymbol {
 
         setFieldsAndFunctions(List.of(
                 new FunctionSymbol("copy", false, Visibility.PUBLIC, List.of(), this),
-                new FieldSymbol("length", true, true, Visibility.PUBLIC, BuiltinTypes.INT)
+                new FieldSymbol("length", true, true, Visibility.PUBLIC, Types.INT)
         ));
     }
 

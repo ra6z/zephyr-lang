@@ -1,6 +1,6 @@
 package io.ra6.zephyr.codeanalysis.symbols;
 
-import io.ra6.zephyr.builtin.BuiltinTypes;
+import io.ra6.zephyr.builtin.Types;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -52,7 +52,7 @@ public class TypeSymbol extends Symbol {
         if (symbol.isPresent()) {
             return symbol.get().getReturnType();
         }
-        return BuiltinTypes.ERROR;
+        return Types.ERROR;
     }
 
     public boolean isUnaryOperatorDefined(String text) {
@@ -64,7 +64,7 @@ public class TypeSymbol extends Symbol {
         if (symbol.isPresent()) {
             return symbol.get().getReturnType();
         }
-        return BuiltinTypes.ERROR;
+        return Types.ERROR;
     }
 
     public boolean isConstructorDefined(int size) {

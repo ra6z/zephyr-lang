@@ -6,7 +6,7 @@ import io.ra6.zephyr.codeanalysis.binding.statements.BoundBlockStatement;
 import io.ra6.zephyr.codeanalysis.binding.statements.BoundIfStatement;
 import io.ra6.zephyr.codeanalysis.binding.statements.BoundReturnStatement;
 import io.ra6.zephyr.codeanalysis.binding.statements.BoundWhileStatement;
-import io.ra6.zephyr.builtin.BuiltinTypes;
+import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.codeanalysis.symbols.FunctionSymbol;
 import lombok.experimental.ExtensionMethod;
 
@@ -47,7 +47,7 @@ public class Lowerer extends BoundTreeRewriter {
             }
         }
 
-        if (function.getType() == BuiltinTypes.VOID) {
+        if (function.getType() == Types.VOID) {
             if (statements.size() == 0 || canFallThrough(statements.last())) {
                 statements.add(new BoundReturnStatement(statement.getSyntax(), null));
             }

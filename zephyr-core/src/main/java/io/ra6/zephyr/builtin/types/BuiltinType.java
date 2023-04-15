@@ -6,10 +6,10 @@ import io.ra6.zephyr.codeanalysis.symbols.BinaryOperatorSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.FieldSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.UnaryOperatorSymbol;
-import lombok.Getter;
+
+import static io.ra6.zephyr.builtin.IFunctionBase.PARAM_OTHER;
 
 public abstract class BuiltinType {
-
     protected abstract void declareFields();
 
     protected abstract void defineFields();
@@ -60,7 +60,7 @@ public abstract class BuiltinType {
     }
 
     protected BinaryOperatorSymbol createBinaryOperator(String operator, TypeSymbol otherType, TypeSymbol returnType) {
-        return new BinaryOperatorSymbol(operator, "other", otherType, returnType);
+        return new BinaryOperatorSymbol(operator, PARAM_OTHER, otherType, returnType);
     }
 
     protected UnaryOperatorSymbol createUnaryOperator(String operator, TypeSymbol returnType) {

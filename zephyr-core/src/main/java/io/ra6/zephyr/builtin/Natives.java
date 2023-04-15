@@ -5,7 +5,7 @@ import io.ra6.zephyr.builtin.natives.NativeType;
 
 import java.util.HashMap;
 
-public class NativeTypes {
+public class Natives {
     private static final HashMap<String, NativeType> TYPES = new HashMap<>();
 
     static {

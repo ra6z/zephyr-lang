@@ -1,6 +1,6 @@
 package io.ra6.zephyr.builtin.natives;
 
-import io.ra6.zephyr.builtin.BuiltinTypes;
+import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.builtin.InternalFunction;
 import io.ra6.zephyr.codeanalysis.binding.Visibility;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
@@ -10,7 +10,7 @@ import java.util.List;
 
 public class NativeConsole extends NativeType {
     private final BoundTypeScope typeScope = new BoundTypeScope(null, getTypeSymbol());
-    private final InternalFunction logString = new InternalFunction("logString", true, Visibility.PUBLIC, List.of(new ParameterSymbol("message", BuiltinTypes.STRING)), BuiltinTypes.VOID, args -> {
+    private final InternalFunction logString = new InternalFunction("logString", true, Visibility.PUBLIC, List.of(new ParameterSymbol("message", Types.STRING)), Types.VOID, args -> {
         String str = (String) args.get("message");
         System.out.println(str);
         return null;
@@ -43,12 +43,12 @@ public class NativeConsole extends NativeType {
 
     @Override
     protected void declareFunctions() {
-        typeScope.declareFunction(logString.getFunctionSymbol());
+        typeScope.declareFunction(logString);
     }
 
     @Override
     protected void defineFunctions() {
-        typeScope.defineFunction(logString.getFunctionSymbol(), logString.bindBody());
+        typeScope.defineFunction(logString);
     }
 
     @Override

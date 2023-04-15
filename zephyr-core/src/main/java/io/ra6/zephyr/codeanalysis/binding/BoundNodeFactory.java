@@ -3,8 +3,8 @@ package io.ra6.zephyr.codeanalysis.binding;
 import io.ra6.zephyr.codeanalysis.binding.expressions.BoundLiteralExpression;
 import io.ra6.zephyr.codeanalysis.binding.expressions.BoundVariableExpression;
 import io.ra6.zephyr.codeanalysis.binding.statements.*;
-import io.ra6.zephyr.builtin.BuiltinTypes;
-import io.ra6.zephyr.builtin.InternalFunctionBase;
+import io.ra6.zephyr.builtin.Types;
+import io.ra6.zephyr.builtin.IFunctionBase;
 import io.ra6.zephyr.codeanalysis.symbols.VariableSymbol;
 import io.ra6.zephyr.codeanalysis.syntax.SyntaxNode;
 
@@ -35,14 +35,14 @@ public class BoundNodeFactory {
     }
 
     public static BoundExpression createIntLiteral(SyntaxNode node, int value) {
-        return new BoundLiteralExpression(node, value, BuiltinTypes.INT);
+        return new BoundLiteralExpression(node, value, Types.INT);
     }
 
     public static BoundExpression createVariableExpression(SyntaxNode node, VariableSymbol variable) {
         return new BoundVariableExpression(node, variable);
     }
 
-    public static BoundExpression createInternalFunctionExpression(SyntaxNode node, InternalFunctionBase function, List<BoundExpression> arguments) {
+    public static BoundExpression createInternalFunctionExpression(SyntaxNode node, IFunctionBase function, List<BoundExpression> arguments) {
         return new BoundInternalFunctionExpression(node, function, arguments);
     }
 
@@ -51,6 +51,6 @@ public class BoundNodeFactory {
     }
 
     public static BoundExpression createDoubleLiteral(SyntaxNode node, double minValue) {
-        return new BoundLiteralExpression(node, minValue, BuiltinTypes.DOUBLE);
+        return new BoundLiteralExpression(node, minValue, Types.DOUBLE);
     }
 }
