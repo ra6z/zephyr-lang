@@ -1,5 +1,3 @@
-import "std:math";
-
 type Vec2 {
     prv var x: double;
     prv var y: double;

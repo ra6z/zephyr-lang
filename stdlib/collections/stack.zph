@@ -1,0 +1,53 @@
+type Stack<TElement> {
+    prv var size: int;
+    prv var elements: TElement[];
+
+    constructor() {
+        this.elements = [];
+        this.size = 0;
+    }
+
+    pub fnc push(element: TElement): void {
+        const newSize: int = this.size + 1;
+        const newElements: TElement[] = new TElement[newSize];
+
+        var index: int = 0;
+        while (index < this.size) {
+            newElements[index] = this.elements[index];
+            index = index + 1;
+        }
+
+        newElements[this.size] = element;
+
+        this.elements = newElements;
+        this.size = newSize;
+    }
+
+    pub fnc pop(): TElement {
+        const newSize: int = this.size - 1;
+        const newElements: TElement[] = new TElement[newSize];
+
+        var index: int = 0;
+        while (index < newSize) {
+            newElements[index] = this.elements[index];
+            index = index + 1;
+        }
+
+        const element: TElement = this.elements[this.size - 1];
+
+        this.elements = newElements;
+        this.size = newSize;
+
+        return element;
+    }
+
+    pub fnc peek(): TElement {
+        return this.elements[this.size - 1];
+    }
+
+    pub fnc count(): int {
+        return this.size;
+    }
+}
+
+export Stack;

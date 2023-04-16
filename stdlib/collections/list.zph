@@ -1,39 +1,40 @@
 type List<TElement> {
-    prv var count: int;
+    prv var size: int;
     prv var elements: TElement[];
 
     constructor() {
         this.elements = [];
-        this.count = 0;
+        this.size = 0;
     }
 
     pub fnc add(element: TElement): void {
-        const newCount: int = this.count + 1;
-        const newElements: TElement[] = new TElement[newCount];
+        const newSize: int = this.size + 1;
+        const newElements: TElement[] = new TElement[newSize];
 
         var index: int = 0;
-        while(index < this.count) {
+
+        while(index < this.size) {
             newElements[index] = this.elements[index];
             index = index + 1;
         }
 
-        newElements[this.count] = element;
+        newElements[this.size] = element;
 
         this.elements = newElements;
-        this.count = newCount;
+        this.size = newSize;
     }
 
     pub fnc remove(index: int): void {
-        if(index > this.count) {
+        if(index > this.size) {
             return;
         }
 
-        const newCount: int = this.count - 1;
-        if(newCount < 0) {
+        const newSize: int = this.size - 1;
+        if(newSize < 0) {
             return;
         }
 
-        const newElements: TElement[] = new TElement[newCount];
+        const newElements: TElement[] = new TElement[newSize];
 
         var i: int = 0;
         while(i < index) {
@@ -42,21 +43,30 @@ type List<TElement> {
         }
 
         i = index + 1;
-        while(i < this.count) {
+        while(i < this.size) {
             newElements[i - 1] = this.elements[i];
             i = i + 1;
         }
 
         this.elements = newElements;
-        this.count = newCount;
+        this.size = newSize;
     }
 
     pub fnc get(index: int): TElement {
         return this.elements[index];
     }
 
-    pub fnc size(): int {
-        return this.count;
+    pub fnc count(): int {
+        return this.size;
+    }
+
+    pub fnc clear(): void {
+        this.elements = [];
+        this.size = 0;
+    }
+
+    pub fnc toArray(): TElement[] {
+        return this.elements.copy();
     }
 }
 
