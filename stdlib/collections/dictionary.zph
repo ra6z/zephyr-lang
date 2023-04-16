@@ -1,18 +1,10 @@
 type Dictionary<TKey, TValue> {
-    pub var a: TKey;
-    pub var b: TValue;
-    constructor(a: TKey, b: TValue){
-        this.a = a;
-        this.b = b;
-    }
 
-    pub fnc getA(): TKey{
-        return this.a;
-    }
-    
-    pub fnc getB(): TValue {
-        return this.b;
-    }
+    prv var size: int = 0;
+    prv var keys: TKey[] = [];
+    prv var values: TValue[] = [];
+
+    constructor() {}
 }
 
 export Dictionary;

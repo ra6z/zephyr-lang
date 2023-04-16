@@ -1,11 +1,8 @@
 type List<TElement> {
-    prv var size: int;
-    prv var elements: TElement[];
+    prv var size: int = 0;
+    prv var elements: TElement[] = [];
 
-    constructor() {
-        this.elements = [];
-        this.size = 0;
-    }
+    constructor() {}
 
     pub fnc add(element: TElement): void {
         const newSize: int = this.size + 1;

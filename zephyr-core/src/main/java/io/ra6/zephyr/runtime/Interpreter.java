@@ -20,6 +20,11 @@ public class Interpreter {
         BoundProgramScope program = mainProgram.getProgram();
         ProgramInterpreter evaluator = mainProgram.getEvaluator();
 
+        if (program.getExports().size() == 0) {
+            RuntimeLogger.errorf("No exports found in program %s%n", program.getName());
+            return;
+        }
+
         for (ExportSymbol export : program.getExports()) {
             RuntimeType entryType = evaluator.getRuntimeType(program, export.getType());
             TypeSymbol type = entryType.getType();
@@ -31,7 +36,7 @@ public class Interpreter {
                     return;
                 }
 
-                if(!mainFunction.getType().equals(Types.INT) && !mainFunction.getType().equals(Types.VOID)) {
+                if (!mainFunction.getType().equals(Types.INT) && !mainFunction.getType().equals(Types.VOID)) {
                     RuntimeLogger.errorf("Main function must return int or void%n");
                     return;
                 }
@@ -39,7 +44,7 @@ public class Interpreter {
                 boolean returns = mainFunction.getType().equals(Types.INT);
 
                 Object result = evaluator.evaluateFunctionWithEvaluatedArgs(entryType, mainFunction, new Object[]{args});
-                if(returns) {
+                if (returns) {
                     exitCode = (int) result;
                     return;
                 }
