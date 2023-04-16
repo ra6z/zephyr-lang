@@ -16,6 +16,7 @@ public class Types {
     public static final TypeSymbol ERROR = new TypeSymbol("error");
     public static final TypeSymbol DOUBLE = new TypeSymbol("double");
     public static final TypeSymbol UNKNOWN = new TypeSymbol("?");
+    public static final TypeSymbol ANY = new TypeSymbol("any");
 
     private static final HashMap<TypeSymbol, BuiltinType> TYPES = new HashMap<>();
     private static final HashMap<Class<?>, TypeSymbol> literalTypeMapping = new HashMap<>();
@@ -35,6 +36,9 @@ public class Types {
         register(new BuiltinDoubleType());
         register(new BuiltinBoolType());
         register(new BuiltinCharType());
+        register(new BuiltinAnyType());
+        // TODO: add error type
+//        register(new BuiltinErrorType());
 
         literalTypeMapping.put(Integer.class, INT);
         literalTypeMapping.put(String.class, STRING);

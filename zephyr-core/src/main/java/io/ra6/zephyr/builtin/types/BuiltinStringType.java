@@ -61,10 +61,14 @@ public class BuiltinStringType extends BuiltinType {
         return otherValue.contains(other);
     });
 
-    private final InternalFunction equals = new InternalFunction("equals", false, Visibility.PUBLIC, List.of(new ParameterSymbol(PARAM_OTHER, Types.STRING)), Types.BOOL, args -> {
-        String otherValue = (String) args.get(PARAM_THIS);
-        String other = (String) args.get(PARAM_OTHER);
-        return otherValue.equals(other);
+    private final InternalFunction equals = new InternalFunction("equals", false, Visibility.PUBLIC, List.of(new ParameterSymbol(PARAM_OTHER, Types.ANY)), Types.BOOL, args -> {
+        String thisValue = (String) args.get(PARAM_THIS);
+
+        if (!(args.get(PARAM_OTHER) instanceof String other)) {
+            return false;
+        }
+
+        return thisValue.equals(other);
     });
 
     private final InternalFunction equalsIgnoreCase = new InternalFunction("equalsIgnoreCase", false, Visibility.PUBLIC, List.of(new ParameterSymbol(PARAM_OTHER, Types.STRING)), Types.BOOL, args -> {

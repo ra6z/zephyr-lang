@@ -4,8 +4,10 @@ import io.ra6.zephyr.builtin.IFunctionBase;
 import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.codeanalysis.binding.expressions.BoundInternalFunctionExpression;
 import io.ra6.zephyr.codeanalysis.binding.expressions.BoundLiteralExpression;
+import io.ra6.zephyr.codeanalysis.binding.expressions.BoundThisExpression;
 import io.ra6.zephyr.codeanalysis.binding.expressions.BoundVariableExpression;
 import io.ra6.zephyr.codeanalysis.binding.statements.*;
+import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.VariableSymbol;
 import io.ra6.zephyr.codeanalysis.syntax.SyntaxNode;
 
@@ -57,5 +59,9 @@ public class BoundNodeFactory {
 
     public static BoundExpression createCharLiteral(SyntaxNode node, char value) {
         return new BoundLiteralExpression(node, value, Types.CHAR);
+    }
+
+    public static BoundExpression createTypeEqualsExpression(SyntaxNode node, BoundThisExpression boundThisExpression, TypeSymbol type) {
+        return new BoundTypeCheckExpression(node, boundThisExpression, type);
     }
 }

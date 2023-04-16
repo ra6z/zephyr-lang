@@ -6,6 +6,7 @@ import io.ra6.zephyr.codeanalysis.symbols.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,6 +23,7 @@ public class RuntimeType {
     private boolean initialized = false;
 
     private final HashMap<FieldSymbol, Object> sharedFields = new HashMap<>();
+    private List<String> genericTypes = new ArrayList<>();
 
     public RuntimeType(Runtime runtime, TypeSymbol type, BoundTypeScope scope) {
         this.runtime = runtime;
@@ -29,6 +31,10 @@ public class RuntimeType {
 
         // TODO: initialize static fields
         this.scope = scope;
+
+        for (int i = 0; i < type.getGenericCount(); i++) {
+            genericTypes.add(type.getGenericAt(i));
+        }
     }
 
     public List<FieldSymbol> getSharedFields() {
@@ -48,8 +54,8 @@ public class RuntimeType {
         return sharedFields.get(field);
     }
 
-    public TypeInstance createInstance(HashMap<FieldSymbol, Object> fields) {
-        return new TypeInstance(this, fields);
+    public TypeInstance createInstance(HashMap<FieldSymbol, Object> fields, HashMap<String, RuntimeType> genericTypes) {
+        return new TypeInstance(this, fields, genericTypes);
     }
 
     public FunctionSymbol getFunction(String functionName, boolean isShared) {
@@ -80,5 +86,13 @@ public class RuntimeType {
 
     public UnaryOperatorSymbol getUnaryOperator(String operator) {
         return type.getUnaryOperator(operator);
+    }
+
+    public Object isAssignableTo(RuntimeType rightType) {
+        return type.isAssignableTo(rightType.getType());
+    }
+
+    public boolean hasGenerics() {
+        return type.getGenericCount() > 0;
     }
 }

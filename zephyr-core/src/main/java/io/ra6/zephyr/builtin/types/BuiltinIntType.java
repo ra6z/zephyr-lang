@@ -1,12 +1,12 @@
 package io.ra6.zephyr.builtin.types;
 
-import io.ra6.zephyr.codeanalysis.binding.BoundNodeFactory;
-import io.ra6.zephyr.codeanalysis.binding.Visibility;
-import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
-import io.ra6.zephyr.builtin.Types;
 import io.ra6.zephyr.builtin.InternalBinaryOperator;
 import io.ra6.zephyr.builtin.InternalFunction;
 import io.ra6.zephyr.builtin.InternalUnaryOperator;
+import io.ra6.zephyr.builtin.Types;
+import io.ra6.zephyr.codeanalysis.binding.BoundNodeFactory;
+import io.ra6.zephyr.codeanalysis.binding.Visibility;
+import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
 import io.ra6.zephyr.codeanalysis.symbols.*;
 
 import java.util.List;
@@ -29,6 +29,15 @@ public class BuiltinIntType extends BuiltinType {
     private final InternalFunction toString = new InternalFunction("toString", false, Visibility.PUBLIC, List.of(), Types.STRING, args -> {
         int thisValue = (int) args.get(PARAM_THIS);
         return Integer.toString(thisValue);
+    });
+    private final InternalFunction equals = new InternalFunction("equals", false, Visibility.PUBLIC, List.of(new ParameterSymbol("other", Types.ANY)), Types.BOOL, args -> {
+        int selfValue = (int) args.get(PARAM_THIS);
+
+        if (!(args.get(PARAM_OTHER) instanceof Integer)) {
+            return false;
+        }
+
+        return selfValue == (int) args.get(PARAM_OTHER);
     });
 
     @Override
@@ -59,12 +68,14 @@ public class BuiltinIntType extends BuiltinType {
     protected void declareFunctions() {
         typeScope.declareFunction(fromDouble);
         typeScope.declareFunction(toString);
+        typeScope.declareFunction(equals);
     }
 
     @Override
     protected void defineFunctions() {
         typeScope.defineFunction(fromDouble);
         typeScope.defineFunction(toString);
+        typeScope.defineFunction(equals);
     }
 
     @Override

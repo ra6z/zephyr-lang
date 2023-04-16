@@ -79,7 +79,7 @@ public class Runtime {
         return null;
     }
 
-    public ProgramInterpreter findRuntimeEvaluator(TypeSymbol type) {
+    public ProgramInterpreter findInterpreter(TypeSymbol type) {
         for (RegisteredProgram registeredProgram : registeredPrograms) {
             RuntimeType runtimeType = getRuntimeType(registeredProgram.getProgram(), type);
             if (runtimeType != null) {

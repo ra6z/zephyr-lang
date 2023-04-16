@@ -5,6 +5,7 @@ import io.ra6.zephyr.builtin.*;
 import io.ra6.zephyr.codeanalysis.binding.BoundExpression;
 import io.ra6.zephyr.codeanalysis.binding.BoundLabel;
 import io.ra6.zephyr.codeanalysis.binding.BoundStatement;
+import io.ra6.zephyr.codeanalysis.binding.BoundTypeCheckExpression;
 import io.ra6.zephyr.codeanalysis.binding.expressions.*;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundProgramScope;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
@@ -23,7 +24,7 @@ import java.util.Optional;
 public class ProgramInterpreter {
     private final Runtime runtime;
     private final BoundProgramScope program;
-
+    private final HashMap<RuntimeType, HashMap<String, RuntimeType>> genericTypes = new HashMap<>();
     private final VariableTableStack variableTable = new VariableTableStack();
 
     private Object lastValue;
@@ -73,8 +74,58 @@ public class ProgramInterpreter {
             case CONVERSION_EXPRESSION -> evaluateConversionExpression((BoundConversionExpression) expression);
             case CONDITIONAL_EXPRESSION -> evaluateConditionalExpression((BoundConditionalExpression) expression);
             case FIELD_ACCESS_EXPRESSION -> evaluateFieldAccessExpression((BoundFieldAccessExpression) expression);
+            case TYPE_CHECK_EXPRESSION -> evaluateTypeCheckExpression((BoundTypeCheckExpression) expression);
             default -> throw new RuntimeException("Unexpected expression: " + expression.getKind());
         };
+    }
+
+    private Object evaluateTypeCheckExpression(BoundTypeCheckExpression expression) {
+        Object leftValue = evaluateExpression(expression.getLeftExpression());
+        RuntimeType rightType = null;
+
+        if (program.isTypeImported(expression.getRightType())) {
+            ProgramInterpreter interpreter = runtime.findInterpreter(expression.getRightType());
+            rightType = interpreter.getRuntimeType(program, expression.getRightType());
+        }
+
+        if (leftValue instanceof TypeInstance instance) {
+            if (rightType == null) rightType = getRuntimeType(program, expression.getRightType());
+
+            return instance.getRuntimeType().isAssignableTo(rightType);
+        }
+
+        if (leftValue instanceof RuntimeType type) {
+            if (expression.getRightType().isGeneric()) {
+                rightType = genericTypes.get(type).get(expression.getRightType().getName());
+            }
+
+            if (rightType == null) rightType = getRuntimeType(program, expression.getRightType());
+
+            return type.isAssignableTo(rightType);
+        }
+
+        if (Types.isValidLiteralType(leftValue.getClass())) {
+            TypeSymbol literalType = Types.getLiteralType(leftValue.getClass());
+
+            if (expression.getRightType().isGeneric()) {
+                TypeInstance thisType = variableTable.peek().keySet().stream()
+                        .filter(symbol -> symbol.getName().equals("this"))
+                        .findFirst()
+                        .map(symbol -> (TypeInstance) variableTable.peek().get(symbol))
+                        .orElse(null);
+
+                if (thisType == null) {
+                    throw new RuntimeException("Cannot find 'this' in type check expression");
+                }
+
+                rightType = genericTypes.get(thisType.getRuntimeType()).get(expression.getRightType().getName());
+                return literalType.isAssignableTo(rightType.getType());
+            } else {
+                return literalType.isAssignableTo(expression.getRightType());
+            }
+        }
+
+        throw new RuntimeException("Unexpected type for type check expression '%s'".formatted(leftValue.getClass().getSimpleName()));
     }
 
     private Object evaluateFieldAccessExpression(BoundFieldAccessExpression expression) {
@@ -150,7 +201,7 @@ public class ProgramInterpreter {
         TypeSymbol type = expression.getType();
         if (program.isTypeImported(type)) {
             // we use this because evaluator.getRuntimeType will return the runtime type of the imported type and also initialize missing shared fields
-            ProgramInterpreter evaluator = runtime.findRuntimeEvaluator(type);
+            ProgramInterpreter evaluator = runtime.findInterpreter(type);
             return evaluator.getRuntimeType(evaluator.program, type);
         }
 
@@ -185,7 +236,7 @@ public class ProgramInterpreter {
 
         if (instanceValue instanceof RuntimeType type) {
             if (program.isTypeImported(type.getType())) {
-                ProgramInterpreter evaluator = runtime.findRuntimeEvaluator(type.getType());
+                ProgramInterpreter evaluator = runtime.findInterpreter(type.getType());
                 return evaluator.evaluateMemberAccessExpression(expression);
             }
 
@@ -319,7 +370,7 @@ public class ProgramInterpreter {
         }
 
         if (program.isTypeImported(type.getType())) {
-            ProgramInterpreter evaluator = runtime.findRuntimeEvaluator(type.getType());
+            ProgramInterpreter evaluator = runtime.findInterpreter(type.getType());
 
             List<Object> evaluatedArguments = new ArrayList<>();
             for (BoundExpression argument : arguments) {
@@ -389,7 +440,7 @@ public class ProgramInterpreter {
         }
 
         if (program.isTypeImported(instance.getRuntimeType().getType())) {
-            ProgramInterpreter evaluator = runtime.findRuntimeEvaluator(instance.getRuntimeType().getType());
+            ProgramInterpreter evaluator = runtime.findInterpreter(instance.getRuntimeType().getType());
 
             List<Object> evaluatedArguments = new ArrayList<>();
             for (BoundExpression argument : arguments) {
@@ -545,7 +596,7 @@ public class ProgramInterpreter {
 
     private Object evaluateInstanceCreationExpression(BoundInstanceCreationExpression expression) {
         if (program.isTypeImported(expression.getType())) {
-            ProgramInterpreter programInterpreter = runtime.findRuntimeEvaluator(expression.getType());
+            ProgramInterpreter programInterpreter = runtime.findInterpreter(expression.getType());
             return programInterpreter.evaluateInstanceCreationExpression(expression);
         }
 
@@ -562,8 +613,27 @@ public class ProgramInterpreter {
             instanceFields.put(field, value);
         }
 
-        TypeInstance instance = runtimeType.createInstance(instanceFields);
+        HashMap<String, RuntimeType> genericTypes = new HashMap<>();
         TypeSymbol type = runtimeType.getType();
+
+        if (runtimeType.hasGenerics()) {
+            for (String key : expression.getGenericTypes().keySet()) {
+                TypeSymbol genericType = expression.getGenericTypes().get(key);
+
+                if (program.isTypeImported(genericType)) {
+                    RuntimeType runtimeGenericType = runtime.findRuntimeType(genericType);
+                    genericTypes.put(key, runtimeGenericType);
+                } else {
+                    genericTypes.put(key, getRuntimeType(program, genericType));
+                }
+            }
+        }
+
+        TypeInstance instance = runtimeType.createInstance(instanceFields, genericTypes);
+
+        if (!this.genericTypes.containsKey(runtimeType)) {
+            this.genericTypes.put(instance.getRuntimeType(), genericTypes);
+        }
 
         ConstructorSymbol constructor = type.getConstructor(expression.getArguments().size());
         BoundBlockStatement body = scope.getConstructorBody(constructor);

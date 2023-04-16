@@ -162,4 +162,16 @@ public class TypeSymbol extends Symbol {
         return genericTypes.get(index);
     }
 
+    public boolean isAssignableTo(TypeSymbol type) {
+        if (type == null) {
+            return false;
+        }
+        if (type.equals(this)) {
+            return true;
+        }
+        if (type.equals(Types.ANY)) {
+            return true;
+        }
+        return false;
+    }
 }

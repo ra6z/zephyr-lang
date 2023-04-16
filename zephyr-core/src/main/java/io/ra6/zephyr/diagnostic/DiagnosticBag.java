@@ -429,4 +429,34 @@ public final class DiagnosticBag {
         String hint = "Make sure the array literal can be converted to the target type.";
         reportError(location, message, hint);
     }
+
+    public void reportInvalidEqualsFunction(TextLocation location, String text, String detail) {
+        String message = "Invalid 'equals' function for type '%s'. %s".formatted(text, detail);
+        String hint = "Make sure the 'equals' function is valid.";
+        reportError(location, message, hint);
+    }
+
+    public void reportCannotCheckTypeOfVoid(TextLocation location) {
+        String message = "Cannot check type of 'void'.";
+        String hint = "Make sure the type is not 'void'.";
+        reportError(location, message, hint);
+    }
+
+    public void reportCannotCheckType(TextLocation location, TypeSymbol type, TypeSymbol rightType) {
+        String message = "Cannot check type '%s' against type '%s'.".formatted(type, rightType);
+        String hint = "Make sure the types are compatible.";
+        reportError(location, message, hint);
+    }
+
+    public void reportCannotCheckTypeAgainstGeneric(TextLocation location, TypeSymbol rightType) {
+        String message = "Cannot check type against generic type '%s'.".formatted(rightType);
+        String hint = "Make sure the type is not generic.";
+        reportError(location, message, hint);
+    }
+
+    public void reportCannotCheckType(TextLocation location, TypeSymbol type, TypeSymbol rightType, String s) {
+        String message = "Cannot check type '%s' against type '%s'. %s".formatted(type, rightType, s);
+        String hint = "Make sure the types are compatible.";
+        reportError(location, message, hint);
+    }
 }

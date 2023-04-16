@@ -40,6 +40,7 @@ public final class SyntaxFacts {
 
             put(SyntaxKind.UNARY_OPERATOR_KEYWORD, "unop");
             put(SyntaxKind.BINARY_OPERATOR_KEYWORD, "binop");
+            put(SyntaxKind.IS_KEYWORD, "is");
         }
     };
 

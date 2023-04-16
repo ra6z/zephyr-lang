@@ -10,9 +10,13 @@ public class TypeInstance {
     private final RuntimeType runtimeType;
     private final HashMap<FieldSymbol, Object> fields;
 
-    public TypeInstance(RuntimeType runtimeType, HashMap<FieldSymbol, Object> fields) {
+    @Getter
+    private final HashMap<String, RuntimeType> genericTypes = new HashMap<>();
+
+    public TypeInstance(RuntimeType runtimeType, HashMap<FieldSymbol, Object> fields, HashMap<String, RuntimeType> genericTypes) {
         this.runtimeType = runtimeType;
         this.fields = fields;
+        this.genericTypes.putAll(genericTypes);
     }
 
     public FieldSymbol lookupField(String name) {
@@ -31,5 +35,13 @@ public class TypeInstance {
 
     public void setField(FieldSymbol field, Object value) {
         fields.put(field, value);
+    }
+
+    public RuntimeType getGenericType(String name) {
+        return genericTypes.get(name);
+    }
+
+    public boolean hasGenerics() {
+        return !genericTypes.isEmpty();
     }
 }

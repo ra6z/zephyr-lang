@@ -239,17 +239,9 @@ public class Binder {
         currentType = null;
     }
 
-    private void defineGeneratedFunctions(TypeSymbol type, BoundTypeScope typeScope) {
-        FunctionSymbol toStringFunction = typeScope.getFunction("toString");
-
-        if (typeScope.getFunctionBody(toStringFunction) == null) {
-            BoundBlockStatement body = BoundNodeFactory.createBlockStatement(null, new BoundReturnStatement(null, new BoundLiteralExpression(null, type.getName(), Types.STRING)));
-            typeScope.defineFunction(toStringFunction, body);
-        }
-    }
-
     private void declareGeneratedFunctions(TypeDeclarationSyntax syntax, BoundTypeScope typeScope) {
         FunctionSymbol toStringFunction = typeScope.getFunction("toString");
+        FunctionSymbol equalsFunction = typeScope.getFunction("equals");
 
         if (toStringFunction == null) {
             toStringFunction = new FunctionSymbol("toString", false, Visibility.PUBLIC, List.of(), Types.STRING);
@@ -270,7 +262,51 @@ public class Binder {
             }
         }
 
+        if (equalsFunction == null) {
+            equalsFunction = new FunctionSymbol("equals", false, Visibility.PUBLIC, List.of(new ParameterSymbol("other", Types.ANY)), Types.BOOL);
+        } else {
+            if (equalsFunction.getParameters().size() != 1) {
+                diagnostics.reportInvalidEqualsFunction(syntax.getLocation(), syntax.getIdentifier().getText(), "Parameter count must be 1");
+                return;
+            }
+
+            if (!equalsFunction.getType().equals(Types.BOOL)) {
+                diagnostics.reportInvalidEqualsFunction(syntax.getLocation(), syntax.getIdentifier().getText(), "Return type must be boolean");
+                return;
+            }
+
+            if (equalsFunction.getVisibility() != Visibility.PUBLIC) {
+                diagnostics.reportInvalidEqualsFunction(syntax.getLocation(), syntax.getIdentifier().getText(), "Visibility must be public");
+                return;
+            }
+        }
+
+        typeScope.declareFunction(equalsFunction);
         typeScope.declareFunction(toStringFunction);
+    }
+
+    private void defineGeneratedFunctions(TypeSymbol type, BoundTypeScope typeScope) {
+        FunctionSymbol toStringFunction = typeScope.getFunction("toString");
+        FunctionSymbol equalsFunction = typeScope.getFunction("equals");
+
+        if (typeScope.getFunctionBody(toStringFunction) == null) {
+            BoundBlockStatement body = BoundNodeFactory.createBlockStatement(null, new BoundReturnStatement(null, new BoundLiteralExpression(null, type.getName(), Types.STRING)));
+            typeScope.defineFunction(toStringFunction, body);
+        }
+
+        if (typeScope.getFunctionBody(equalsFunction) == null) {
+            // TODO: generate equals function. Should contain all non shared fields
+            BoundBlockStatement body = generateEqualsFunction(type);
+            typeScope.defineFunction(equalsFunction, body);
+        }
+    }
+
+    private BoundBlockStatement generateEqualsFunction(TypeSymbol type) {
+        BoundExpression other = new BoundVariableExpression(null, new VariableSymbol("other", true, Types.ANY));
+
+        BoundReturnStatement returnStatement = new BoundReturnStatement(null, BoundNodeFactory.createTypeEqualsExpression(null, new BoundThisExpression(null, type), other.getType()));
+
+        return BoundNodeFactory.createBlockStatement(null, returnStatement);
     }
 
     private void declareTypeFieldDeclaration(TypeFieldDeclarationSyntax syntax) {
@@ -827,9 +863,50 @@ public class Binder {
             case ASSIGNMENT_EXPRESSION -> bindAssignmentExpression((AssignmentExpressionSyntax) syntax);
             case ARRAY_ACCESS_EXPRESSION -> bindArrayAccessExpression((ArrayAccessExpressionSyntax) syntax);
             case FUNCTION_CALL_EXPRESSION -> bindFunctionCallExpression((FunctionCallExpressionSyntax) syntax);
-
+            case TYPE_CHECK_EXPRESSION -> bindTypeCheckExpression((TypeCheckExpressionSyntax) syntax);
             default -> bindErrorExpression(syntax);
         };
+    }
+
+    private BoundExpression bindTypeCheckExpression(TypeCheckExpressionSyntax syntax) {
+        String typeName = syntax.getQualifiedName().getText();
+        BoundExpression left = bindExpression(syntax.getLeft());
+
+        // TODO: check generic types
+
+        TypeSymbol rightType = getTypeSymbol(typeName);
+        if (rightType == null) {
+            diagnostics.reportUndefinedType(syntax.getQualifiedName().getLocation(), typeName);
+            return bindErrorExpression(syntax);
+        }
+
+        if (left.getType().isGeneric()) {
+            left = bindConversion(left, left.getType(), rightType);
+
+            // check right type is a generic type
+        }
+
+
+        if (left.getType() == Types.VOID) {
+            diagnostics.reportCannotCheckTypeOfVoid(syntax.getLeft().getLocation());
+            return bindErrorExpression(syntax);
+        }
+
+        if (left.getType().equals(Types.ANY)) {
+            return new BoundTypeCheckExpression(syntax, left, rightType);
+        }
+
+        if (rightType.equals(Types.ANY)) {
+            return left;
+        }
+
+        if (!left.getType().equals(rightType)) {
+            diagnostics.reportCannotCheckType(syntax.getLocation(), left.getType(), rightType);
+            return bindErrorExpression(syntax);
+        }
+
+        diagnostics.reportCannotCheckType(syntax.getLocation(), left.getType(), rightType);
+        return bindExpression(syntax.getLeft());
     }
 
     private BoundExpression bindArrayCreationExpression(ArrayCreationExpressionSyntax syntax) {
@@ -1283,6 +1360,10 @@ public class Binder {
                 argument = bindConversion(argument, parameter.getType(), genericTypes.get(parameter.getType().getName()));
             }
 
+            if (parameter.getType().equals(Types.ANY)) {
+                continue;
+            }
+
             if (!parameter.getType().equals(argument.getType())) {
                 diagnostics.reportMismatchingTypes(argumentSyntax.getLocation(), parameter.getType(), argument.getType());
                 return bindErrorExpression(syntax);
@@ -1346,6 +1427,10 @@ public class Binder {
                         argument = bindConversion(argument, parameter.getType(), variable.getVariable().getGenericType(parameter.getType().getName()));
                     }
 
+                    if (parameter.getType().equals(Types.ANY)) {
+                        continue;
+                    }
+
                     if (!parameter.getType().equals(argument.getType())) {
                         diagnostics.reportMismatchingTypes(argumentSyntax.getLocation(), parameter.getType(), argument.getType());
                         return bindErrorExpression(syntax);
@@ -1381,6 +1466,10 @@ public class Binder {
                     ParameterSymbol parameter = parameters.get(i);
                     BoundExpression argument = boundArguments.get(i);
                     ExpressionSyntax argumentSyntax = argumentsSyntax.get(i);
+
+                    if (parameter.getType().equals(Types.ANY)) {
+                        continue;
+                    }
 
                     if (!parameter.getType().equals(argument.getType())) {
                         diagnostics.reportMismatchingTypes(argumentSyntax.getLocation(), parameter.getType(), argument.getType());
@@ -1429,11 +1518,6 @@ public class Binder {
 
         BoundExpression thenExpression = bindExpression(syntax.getThenExpression());
         BoundExpression elseExpression = bindExpression(syntax.getElseExpression());
-
-        if (!thenExpression.getType().equals(elseExpression.getType())) {
-            diagnostics.reportMismatchingTypes(syntax.getElseExpression().getLocation(), thenExpression.getType(), elseExpression.getType());
-            return bindErrorExpression(syntax);
-        }
 
         return new BoundConditionalExpression(syntax, condition, thenExpression, elseExpression);
     }
@@ -1592,6 +1676,6 @@ public class Binder {
     }
 
     private boolean isReservedTypeName(String typeName) {
-        return typeName.equals("any");
+        return false;
     }
 }

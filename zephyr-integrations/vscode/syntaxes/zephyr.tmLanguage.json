@@ -451,6 +451,14 @@
 					"name": "keyword.operator.assignment.zph"
 				},
 				{
+					"match": "\\b(is)\\b",
+					"name": "keyword.other.typecheck.zph"
+				},
+				{
+					"match": "\\b(as)\\b",
+					"name": "keyword.other.typecast.zph"
+				},
+				{
 					"match": "(\\-|\\+|\\*|\\/|%)",
 					"name": "keyword.operator.arithmetic.zph"
 				},

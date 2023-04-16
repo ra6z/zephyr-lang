@@ -9,6 +9,10 @@ type Console {
         NativeConsole.printlnString(value.toString());
     }
 
+    pub shared fnc logany(value: any): void {
+        NativeConsole.printlnString(value.toString());
+    }
+
     pub shared fnc logc(character: char): void {
         NativeConsole.printlnString(character.toString());
     }

@@ -399,7 +399,6 @@ public final class Parser {
             genericParameter = parseGenericParameterClause();
         }
 
-
         if (current().getKind() == SyntaxKind.OPEN_BRACKET_TOKEN) {
             return parseArrayType(colonToken, typeName);
         }
@@ -568,6 +567,19 @@ public final class Parser {
 
     private ExpressionSyntax parseEqualityExpression() {
         ExpressionSyntax left = parseRelationalExpression();
+
+        if (current().getKind() == SyntaxKind.IS_KEYWORD) {
+            // TODO:
+            SyntaxToken isKeyword = nextToken();
+            QualifiedNameSyntax name = parseQualifiedName();
+
+            GenericParameterClauseSyntax genericParameterClause = null;
+            if (current().getKind() == SyntaxKind.LESS_TOKEN) {
+                genericParameterClause = parseGenericParameterClause();
+            }
+
+            return new TypeCheckExpressionSyntax(syntaxTree, left, isKeyword, name, genericParameterClause);
+        }
 
         while (current().getKind() == SyntaxKind.BANG_EQUALS_TOKEN ||
                 current().getKind() == SyntaxKind.EQUALS_EQUALS_TOKEN) {

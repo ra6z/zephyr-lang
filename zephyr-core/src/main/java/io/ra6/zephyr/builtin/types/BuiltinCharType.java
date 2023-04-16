@@ -8,6 +8,7 @@ import io.ra6.zephyr.codeanalysis.binding.Visibility;
 import io.ra6.zephyr.codeanalysis.binding.scopes.BoundTypeScope;
 import io.ra6.zephyr.codeanalysis.symbols.BinaryOperatorSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.FieldSymbol;
+import io.ra6.zephyr.codeanalysis.symbols.ParameterSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 
 import java.util.List;
@@ -21,8 +22,18 @@ public class BuiltinCharType extends BuiltinType {
     private final FieldSymbol min = createPubSharedField("MIN", Types.CHAR, true);
     private final FieldSymbol max = createPubSharedField("MAX", Types.CHAR, true);
 
-    private final InternalFunction toChar = new InternalFunction("toChar", false, Visibility.PUBLIC, List.of(), Types.CHAR, args -> (char) ((int) args.get(PARAM_THIS)));
+    private final InternalFunction toInt = new InternalFunction("toInt", false, Visibility.PUBLIC, List.of(), Types.CHAR, args -> (char) ((int) args.get(PARAM_THIS)));
     private final InternalFunction toString = new InternalFunction("toString", false, Visibility.PUBLIC, List.of(), Types.STRING, args -> String.valueOf((char) args.get(PARAM_THIS)));
+
+    private final InternalFunction equals = new InternalFunction("equals", false, Visibility.PUBLIC, List.of(new ParameterSymbol("other", Types.ANY)), Types.BOOL, args -> {
+        char selfValue = (char) args.get(PARAM_THIS);
+
+        if (!(args.get(PARAM_OTHER) instanceof Character)) {
+            return false;
+        }
+
+        return selfValue == (char) args.get(PARAM_OTHER);
+    });
 
     @Override
     protected void declareFields() {
@@ -48,14 +59,16 @@ public class BuiltinCharType extends BuiltinType {
 
     @Override
     protected void declareFunctions() {
-        typeScope.declareFunction(toChar);
+        typeScope.declareFunction(toInt);
         typeScope.declareFunction(toString);
+        typeScope.declareFunction(equals);
     }
 
     @Override
     protected void defineFunctions() {
-        typeScope.defineFunction(toChar);
+        typeScope.defineFunction(toInt);
         typeScope.defineFunction(toString);
+        typeScope.defineFunction(equals);
     }
 
     @Override
