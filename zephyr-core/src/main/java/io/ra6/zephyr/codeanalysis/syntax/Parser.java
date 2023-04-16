@@ -680,8 +680,17 @@ public final class Parser {
     private ArraySizeClauseSyntax parseArraySizeClause() {
         SyntaxToken openBracket = matchToken(SyntaxKind.OPEN_BRACKET_TOKEN);
         ExpressionSyntax size = parseExpression();
+
+        InitialArrayValueClauseSyntax initialArrayValueClause = null;
+
+        if (current().getKind() == SyntaxKind.COMMA_TOKEN) {
+            SyntaxToken commaToken = nextToken();
+            ExpressionSyntax initializer = parseExpression();
+            initialArrayValueClause = new InitialArrayValueClauseSyntax(syntaxTree, commaToken, initializer);
+        }
+
         SyntaxToken closeBracket = matchToken(SyntaxKind.CLOSE_BRACKET_TOKEN);
-        return new ArraySizeClauseSyntax(syntaxTree, openBracket, size, closeBracket);
+        return new ArraySizeClauseSyntax(syntaxTree, openBracket, size, initialArrayValueClause, closeBracket);
     }
 
     private SeparatedSyntaxList<ExpressionSyntax> parseArrayElements() {

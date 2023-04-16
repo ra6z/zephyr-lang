@@ -812,7 +812,13 @@ public class Binder {
     private BoundExpression bindArrayCreationExpression(ArrayCreationExpressionSyntax syntax) {
         String typeName = syntax.getQualifiedName().getText();
 
-        List<BoundExpression> sizes = new ArrayList<>();
+        TypeSymbol type = getTypeSymbol(typeName);
+        if (type == null) {
+            diagnostics.reportUndefinedType(syntax.getQualifiedName().getLocation(), typeName);
+            return bindErrorExpression(syntax);
+        }
+
+        HashMap<BoundExpression, BoundExpression> sizes = new HashMap<>();
         for (ArraySizeClauseSyntax size : syntax.getArraySizeClauses()) {
             BoundExpression boundSize = bindExpression(size.getSize());
 
@@ -821,7 +827,17 @@ public class Binder {
                 return bindErrorExpression(syntax);
             }
 
-            sizes.add(boundSize);
+            BoundExpression initializer = null;
+            if (size.getInitialArrayValueClause() != null) {
+                initializer = bindExpression(size.getInitialArrayValueClause().getInitializer());
+
+                if (!initializer.getType().equals(type)) {
+                    diagnostics.reportArrayCreationInitializerTypeMismatch(size.getInitialArrayValueClause().getInitializer().getLocation(), type, initializer.getType());
+                    return bindErrorExpression(syntax);
+                }
+            }
+
+            sizes.put(boundSize, initializer);
         }
 
         if (sizes.isEmpty()) {
@@ -829,17 +845,10 @@ public class Binder {
             return bindErrorExpression(syntax);
         }
 
-        TypeSymbol type = getTypeSymbol(typeName);
-        if (type == null) {
-            diagnostics.reportUndefinedType(syntax.getQualifiedName().getLocation(), typeName);
-            return bindErrorExpression(syntax);
-        }
-
         int rank = sizes.size();
         for (int i = 0; i < rank; i++) {
             type = new ArrayTypeSymbol(type);
         }
-
 
         return new BoundArrayCreationExpression(syntax, type, sizes);
     }

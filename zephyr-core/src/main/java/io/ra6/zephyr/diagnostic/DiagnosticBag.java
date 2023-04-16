@@ -1,6 +1,6 @@
 package io.ra6.zephyr.diagnostic;
 
-import io.ra6.zephyr.codeanalysis.binding.BoundExpression;
+import io.ra6.zephyr.codeanalysis.symbols.ConstructorSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.FunctionSymbol;
 import io.ra6.zephyr.codeanalysis.symbols.TypeSymbol;
 import io.ra6.zephyr.codeanalysis.syntax.SyntaxFacts;
@@ -403,6 +403,24 @@ public final class DiagnosticBag {
     public void reportInvalidUnicodeEscapeSequence(TextLocation location) {
         String message = "Invalid unicode escape sequence.";
         String hint = "Make sure the unicode escape sequence is valid.";
+        reportError(location, message, hint);
+    }
+
+    public void reportArrayCreationInitializerTypeMismatch(TextLocation location, TypeSymbol expected, TypeSymbol actual) {
+        String message = "Array creation initializer type mismatch. Expected '%s' but found '%s'.".formatted(expected, actual);
+        String hint = "Make sure the array creation initializer type matches the array type.";
+        reportError(location, message, hint);
+    }
+
+    public void reportFunctionParameterCountMismatch(TextLocation location, FunctionSymbol function, int size) {
+        String message = "Function parameter count mismatch. Expected %d but found %d.".formatted(function.getParameters().size(), size);
+        String hint = "Make sure the function parameter count matches the call.";
+        reportError(location, message, hint);
+    }
+
+    public void reportConstructorParameterCountMismatch(TextLocation location, ConstructorSymbol constructor, int size) {
+        String message = "Constructor parameter count mismatch. Expected %d but found %d.".formatted(constructor.getParameters().size(), size);
+        String hint = "Make sure the constructor parameter count matches the call.";
         reportError(location, message, hint);
     }
 }

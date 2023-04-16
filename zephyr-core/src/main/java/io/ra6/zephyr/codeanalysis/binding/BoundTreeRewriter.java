@@ -4,7 +4,10 @@ import io.ra6.zephyr.codeanalysis.binding.expressions.*;
 import io.ra6.zephyr.codeanalysis.binding.statements.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public abstract class BoundTreeRewriter {
     public BoundStatement rewriteStatement(BoundStatement node) {
@@ -159,21 +162,28 @@ public abstract class BoundTreeRewriter {
     }
 
     private BoundExpression rewriteArrayCreationExpression(BoundArrayCreationExpression node) {
-        List<BoundExpression> sizes = null;
+        HashMap<BoundExpression, BoundExpression> sizes = null;
 
-        for (int i = 0; i < node.getDimensions().size(); i++) {
-            BoundExpression oldSize = node.getDimensions().get(i);
-            BoundExpression newSize = rewriteExpression(oldSize);
+        int index = 0;
+
+        for (var entry : node.getDimensions().entrySet()) {
+            BoundExpression oldSize = entry.getValue();
+            BoundExpression newSize = oldSize == null ? null : rewriteExpression(oldSize);
 
             if (newSize != oldSize) {
                 if (sizes == null) {
-                    sizes = new ArrayList<>(node.getDimensions().subList(0, i));
+                    sizes = new HashMap<>(node.getDimensions().entrySet().stream()
+                            .limit(index)
+                            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)
+                            ));
                 }
 
-                sizes.add(newSize);
+                sizes.put(entry.getKey(), newSize);
             } else if (sizes != null) {
-                sizes.add(oldSize);
+                sizes.put(entry.getKey(), oldSize);
             }
+
+            index++;
         }
 
         if (sizes == null) {
