@@ -328,8 +328,8 @@ public final class DiagnosticBag {
         reportError(location, message, hint);
     }
 
-    public void reportCannotAccessPrivateMember(TextLocation location, String name, String member) {
-        String message = "Cannot access private member '%s' of type '%s'.".formatted(member, name);
+    public void reportCannotAccessPrivateMember(TextLocation location, String name, String member, String memberType) {
+        String message = "Cannot access private %s '%s' of type '%s'.".formatted(member, memberType, name);
         String hint = "Make sure the member is declared as 'public'.";
         reportError(location, message, hint);
     }
@@ -421,6 +421,12 @@ public final class DiagnosticBag {
     public void reportConstructorParameterCountMismatch(TextLocation location, ConstructorSymbol constructor, int size) {
         String message = "Constructor parameter count mismatch. Expected %d but found %d.".formatted(constructor.getParameters().size(), size);
         String hint = "Make sure the constructor parameter count matches the call.";
+        reportError(location, message, hint);
+    }
+
+    public void reportCannotConvertArrayLiteral(TextLocation location, TypeSymbol type, TypeSymbol type1) {
+        String message = "Cannot convert array literal of type '%s' to type '%s'.".formatted(type, type1);
+        String hint = "Make sure the array literal can be converted to the target type.";
         reportError(location, message, hint);
     }
 }

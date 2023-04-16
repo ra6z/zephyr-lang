@@ -337,6 +337,28 @@ public class Binder {
             return;
         }
 
+        if (field.getType() instanceof ArrayTypeSymbol array) {
+            if (initializer instanceof BoundArrayLiteralExpression arrayLiteralExpression) {
+                if (arrayLiteralExpression.getType().equals(new ArrayTypeSymbol(Types.UNKNOWN))) {
+                    initializer = new BoundArrayLiteralExpression(arrayLiteralExpression.getSyntax(), array, arrayLiteralExpression.getElements());
+
+                    // TODO: check for literal
+                }
+            }
+        }
+
+        if (isTypeGeneric(field.getType())) {
+            if (initializer instanceof BoundArrayLiteralExpression arrayLiteral) {
+                if (arrayLiteral.getElements().size() > 0) {
+                    diagnostics.reportCannotConvert(syntax.getInitializer().getLocation(), arrayLiteral.getType(), field.getType());
+                    return;
+                }
+            }
+
+            if (initializer != null)
+                initializer = bindConversion(initializer, initializer.getType(), field.getType());
+        }
+
         if (initializer != null && !initializer.getType().equals(field.getType())) {
             diagnostics.reportCannotConvert(syntax.getInitializer().getLocation(), initializer.getType(), field.getType());
             return;
@@ -933,11 +955,20 @@ public class Binder {
             if (value instanceof BoundArrayLiteralExpression arrayLiteralExpression) {
                 if (arrayLiteralExpression.getType().equals(new ArrayTypeSymbol(Types.UNKNOWN))) {
                     value = new BoundArrayLiteralExpression(arrayLiteralExpression.getSyntax(), array, arrayLiteralExpression.getElements());
+
+                    // TODO: check for generic
                 }
             }
         }
 
-        if (value.getType().isGeneric()) {
+        if (isTypeGeneric(value.getType())) {
+            if (value instanceof BoundArrayLiteralExpression arrayLiteral) {
+                if (arrayLiteral.getElements().size() > 0) {
+                    diagnostics.reportCannotConvertArrayLiteral(syntax.getRight().getLocation(), arrayLiteral.getType(), field.getType());
+                    return bindErrorExpression(syntax);
+                }
+            }
+
             value = new BoundConversionExpression(value.getSyntax(), field.getType(), value.getType(), value);
         }
 
@@ -968,7 +999,14 @@ public class Binder {
             }
         }
 
-        if (value.getType().isGeneric()) {
+        if (isTypeGeneric(value.getType())) {
+            if (value instanceof BoundArrayLiteralExpression arrayLiteral) {
+                if (arrayLiteral.getElements().size() > 0) {
+                    diagnostics.reportCannotConvertArrayLiteral(value.getSyntax().getLocation(), arrayLiteral.getType(), variable.getType());
+                    return bindErrorExpression(syntax);
+                }
+            }
+
             value = new BoundConversionExpression(value.getSyntax(), variable.getType(), value.getType(), value);
         }
 
@@ -983,6 +1021,18 @@ public class Binder {
         }
 
         return new BoundAssignmentExpression(syntax, target, value);
+    }
+
+    private boolean isTypeGeneric(TypeSymbol type) {
+        if (type.isGeneric()) {
+            return true;
+        }
+
+        if (type instanceof ArrayTypeSymbol array) {
+            return isTypeGeneric(array.getElementType());
+        }
+
+        return false;
     }
 
     private BoundExpression bindArrayAccessExpression(ArrayAccessExpressionSyntax syntax) {
@@ -1107,7 +1157,7 @@ public class Binder {
     private BoundExpression bindAndCheckMemberAccess(MemberAccessExpressionSyntax syntax, BoundExpression target, String member, TypeSymbol typeSymbol) {
         if (typeSymbol.getFieldOrFunction(member) instanceof FieldSymbol field) {
             if (field.getVisibility() == Visibility.PRIVATE && !currentType.equals(typeSymbol)) {
-                diagnostics.reportCannotAccessPrivateMember(syntax.getMember().getLocation(), typeSymbol.getName(), member);
+                diagnostics.reportCannotAccessPrivateMember(syntax.getMember().getLocation(), typeSymbol.getName(), member, "field");
                 return bindErrorExpression(syntax);
             }
             return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
@@ -1115,7 +1165,7 @@ public class Binder {
 
         if (typeSymbol.getFieldOrFunction(member) instanceof FunctionSymbol function) {
             if (function.getVisibility() == Visibility.PRIVATE && !currentType.equals(typeSymbol)) {
-                diagnostics.reportCannotAccessPrivateMember(syntax.getMember().getLocation(), typeSymbol.getName(), member);
+                diagnostics.reportCannotAccessPrivateMember(syntax.getMember().getLocation(), typeSymbol.getName(), member, "function");
                 return bindErrorExpression(syntax);
             }
             return new BoundMemberAccessExpression(syntax, target, typeSymbol.getFieldOrFunction(member));
