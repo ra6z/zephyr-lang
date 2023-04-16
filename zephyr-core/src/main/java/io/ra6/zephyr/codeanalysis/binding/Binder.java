@@ -53,7 +53,7 @@ public class Binder {
 
         this.diagnostics.addAll(syntaxTree.getDiagnostics());
 
-        this.programScope = new BoundProgramScope();
+        this.programScope = new BoundProgramScope(syntaxTree.getSourceText().getFilePath());
 
         // TODO: declare builtin types#
         for (BuiltinType type : Types.getBuiltinTypes()) {
@@ -241,7 +241,7 @@ public class Binder {
     private void defineGeneratedFunctions(TypeSymbol type, BoundTypeScope typeScope) {
         FunctionSymbol toStringFunction = typeScope.getFunction("toString");
 
-        if (typeScope.getFunctionScope(toStringFunction) == null) {
+        if (typeScope.getFunctionBody(toStringFunction) == null) {
             BoundBlockStatement body = BoundNodeFactory.createBlockStatement(null, new BoundReturnStatement(null, new BoundLiteralExpression(null, type.getName(), Types.STRING)));
             typeScope.defineFunction(toStringFunction, body);
         }
@@ -967,6 +967,10 @@ public class Binder {
             }
         }
 
+        if (value.getType().isGeneric()) {
+            value = new BoundConversionExpression(value.getSyntax(), variable.getType(), value.getType(), value);
+        }
+
         if (!variable.getType().equals(value.getType())) {
             diagnostics.reportCannotConvert(syntax.getRight().getLocation(), value.getType(), variable.getType());
             return bindErrorExpression(syntax);
@@ -1204,6 +1208,12 @@ public class Binder {
         List<ParameterSymbol> parameters = constructor.getParameters();
         SeparatedSyntaxList<ExpressionSyntax> argumentsSyntax = syntax.getArguments();
 
+
+        if (parameters.size() != arguments.size()) {
+            diagnostics.reportConstructorParameterCountMismatch(TextLocation.fromLocations(syntax.getNewKeyword().getLocation(), syntax.getRightParenthesis().getLocation()), constructor, arguments.size());
+            return bindErrorExpression(syntax);
+        }
+
         for (int i = 0; i < parameters.size(); i++) {
             ParameterSymbol parameter = parameters.get(i);
             BoundExpression argument = arguments.get(i);
@@ -1262,6 +1272,11 @@ public class Binder {
                 List<ParameterSymbol> parameters = function.getParameters();
                 SeparatedSyntaxList<ExpressionSyntax> argumentsSyntax = syntax.getArguments();
 
+                if (parameters.size() != boundArguments.size()) {
+                    diagnostics.reportFunctionParameterCountMismatch(syntax.getCallee().getLocation(), function, boundArguments.size());
+                    return bindErrorExpression(syntax);
+                }
+
                 for (int i = 0; i < parameters.size(); i++) {
                     ParameterSymbol parameter = parameters.get(i);
                     BoundExpression argument = boundArguments.get(i);
@@ -1305,6 +1320,11 @@ public class Binder {
                 // CHECK ARGUMENTS
                 List<ParameterSymbol> parameters = function.getParameters();
                 SeparatedSyntaxList<ExpressionSyntax> argumentsSyntax = syntax.getArguments();
+
+                if (parameters.size() != boundArguments.size()) {
+                    diagnostics.reportFunctionParameterCountMismatch(syntax.getLocation(), function, boundArguments.size());
+                    return bindErrorExpression(syntax);
+                }
 
                 for (int i = 0; i < parameters.size(); i++) {
                     ParameterSymbol parameter = parameters.get(i);

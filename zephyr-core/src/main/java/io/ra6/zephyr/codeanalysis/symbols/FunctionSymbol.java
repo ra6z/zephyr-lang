@@ -6,7 +6,7 @@ import lombok.Setter;
 
 import java.util.List;
 
-public class FunctionSymbol extends CallableSymbol{
+public class FunctionSymbol extends CallableSymbol {
     @Getter
     private final boolean isShared;
     @Getter

@@ -7,7 +7,6 @@ import java.util.concurrent.Callable;
 @CommandLine.Command(
         mixinStandardHelpOptions = true,
         subcommands = {
-                ZephyrCompile.class,
                 ZephyrRun.class
         }
 )

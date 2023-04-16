@@ -7,7 +7,7 @@ public class VariableTableStack extends Stack<VariableTable> {
 
     @Override
     public VariableTable push(VariableTable item) {
-        RuntimeLogger.printf("%sEntering: %s%n", " ".repeat(indent), item);
+        RuntimeLogger.tracef("%sEntering: %s%n", " ".repeat(indent), item);
         indent += 4;
         return super.push(item);
     }
@@ -15,7 +15,7 @@ public class VariableTableStack extends Stack<VariableTable> {
     @Override
     public synchronized VariableTable pop() {
         indent -= 4;
-        RuntimeLogger.printf("%sLeaving:  %s%n", " ".repeat(indent), peek());
+        RuntimeLogger.tracef("%sLeaving:  %s%n", " ".repeat(indent), peek());
         return super.pop();
     }
 }

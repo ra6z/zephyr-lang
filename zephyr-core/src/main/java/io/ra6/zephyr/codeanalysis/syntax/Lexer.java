@@ -297,7 +297,7 @@ public final class Lexer {
         }
 
         currentTokenKind = SyntaxKind.CHARACTER_TOKEN;
-        currentTokenValue = sb.toString();
+        currentTokenValue = sb.toString().charAt(0);
     }
 
     private void readString() {

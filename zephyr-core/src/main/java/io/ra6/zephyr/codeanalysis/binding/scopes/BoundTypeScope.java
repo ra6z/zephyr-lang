@@ -155,7 +155,7 @@ public class BoundTypeScope extends BoundScope {
         defineFunction(function.getFunctionSymbol(), function.bindBody());
     }
 
-    public BoundBlockStatement getFunctionScope(FunctionSymbol function) {
+    public BoundBlockStatement getFunctionBody(FunctionSymbol function) {
         return functionDefinitions
                 .keySet()
                 .stream()
@@ -165,7 +165,7 @@ public class BoundTypeScope extends BoundScope {
                 .orElse(null);
     }
 
-    public BoundBlockStatement getConstructorScope(ConstructorSymbol constructor) {
+    public BoundBlockStatement getConstructorBody(ConstructorSymbol constructor) {
         return constructors.getDefinitions()
                 .keySet()
                 .stream()
@@ -185,7 +185,7 @@ public class BoundTypeScope extends BoundScope {
                 .orElse(null);
     }
 
-    public BoundBlockStatement getUnaryOperatorScope(UnaryOperatorSymbol operator) {
+    public BoundBlockStatement getUnaryOperatorBody(UnaryOperatorSymbol operator) {
         return unaryOperators.getDefinitions()
                 .keySet()
                 .stream()
@@ -195,7 +195,7 @@ public class BoundTypeScope extends BoundScope {
                 .orElse(null);
     }
 
-    public BoundBlockStatement getBinaryOperatorScope(BinaryOperatorSymbol binaryOperator) {
+    public BoundBlockStatement getBinaryOperatorBody(BinaryOperatorSymbol binaryOperator) {
         return binaryOperators.getDefinitions()
                 .keySet()
                 .stream()

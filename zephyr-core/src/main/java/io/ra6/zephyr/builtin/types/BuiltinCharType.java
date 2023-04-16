@@ -85,13 +85,13 @@ public class BuiltinCharType extends BuiltinType {
 
     @Override
     protected void defineBinaryOperators() {
-        for(BinaryOperatorSymbol symbol : typeScope.getDeclaredBinaryOperators()) {
+        for (BinaryOperatorSymbol symbol : typeScope.getDeclaredBinaryOperators()) {
             TypeSymbol otherType = symbol.getOtherType();
 
-            InternalBinaryOperator ibo = new InternalBinaryOperator(symbol.getName(), symbol.getOtherType(), symbol.getReturnType(), args ->{
+            InternalBinaryOperator ibo = new InternalBinaryOperator(symbol.getName(), symbol.getOtherType(), symbol.getReturnType(), args -> {
                 char self = (char) args.get(PARAM_THIS);
 
-                if(otherType == Types.CHAR) {
+                if (otherType == Types.CHAR) {
                     char other = (char) args.get(PARAM_OTHER);
                     switch (symbol.getName()) {
                         case "+" -> {
@@ -119,32 +119,32 @@ public class BuiltinCharType extends BuiltinType {
                             return self <= other;
                         }
                     }
-                } else if(otherType == Types.INT) {
+                } else if (otherType == Types.INT) {
                     int other = (int) args.get(PARAM_OTHER);
                     switch (symbol.getName()) {
                         case "+" -> {
-                            return self + other;
+                            return (char) (self + other);
                         }
                         case "-" -> {
-                            return self - other;
+                            return (char) (self - other);
                         }
                         case "==" -> {
-                            return self == other;
+                            return self == ((char) other);
                         }
                         case "!=" -> {
-                            return self != other;
+                            return self != ((char) other);
                         }
                         case ">" -> {
-                            return self > other;
+                            return self > ((char) other);
                         }
                         case ">=" -> {
-                            return self >= other;
+                            return self >= ((char) other);
                         }
                         case "<" -> {
-                            return self < other;
+                            return self < ((char) other);
                         }
                         case "<=" -> {
-                            return self <= other;
+                            return self <= ((char) other);
                         }
                     }
                 }

@@ -1,11 +1,11 @@
 package io.ra6.zephyr.writer;
 
 import io.ra6.zephyr.ConsoleColors;
-import io.ra6.zephyr.diagnostic.DiagnosticBag;
-import io.ra6.zephyr.sourcefile.TextSpan;
 import io.ra6.zephyr.diagnostic.Diagnostic;
+import io.ra6.zephyr.diagnostic.DiagnosticBag;
 import io.ra6.zephyr.sourcefile.SourceText;
 import io.ra6.zephyr.sourcefile.TextLine;
+import io.ra6.zephyr.sourcefile.TextSpan;
 
 import java.io.PrintStream;
 import java.util.Comparator;
@@ -18,6 +18,7 @@ public final class DiagnosticWriter {
     public static void printDiagnostics(PrintStream stream, DiagnosticBag diagnostics) {
         printDiagnostics(stream, diagnostics.asList());
     }
+
     public static void printDiagnostics(PrintStream stream, List<Diagnostic> diagnostics) {
         for (Diagnostic diagnostic : diagnostics.stream()
                 .filter(d -> d.getLocation().getSource() == null)
@@ -47,7 +48,7 @@ public final class DiagnosticWriter {
 
             String color = "";
 
-            if (diagnostic.isError()){
+            if (diagnostic.isError()) {
                 stream.print(ConsoleColors.ANSI_RED);
                 color = ConsoleColors.ANSI_RED;
                 stream.print("error");

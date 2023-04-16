@@ -94,12 +94,16 @@ public class TypeSymbol extends Symbol {
         return symbol.orElse(null);
     }
 
-    public boolean isFunctionDefined(String methodName, int size) {
-        return fieldsAndFunctions.stream().filter(f -> f instanceof FunctionSymbol).anyMatch(f -> f.getName().equals(methodName));
+    public boolean isFunctionDefined(String functionName, int size) {
+        return fieldsAndFunctions.stream().filter(f -> f instanceof FunctionSymbol).anyMatch(f -> f.getName().equals(functionName) && ((FunctionSymbol) f).getParameters().size() == size);
     }
 
-    public FunctionSymbol getFunction(String methodName, boolean isShared) {
-        Optional<FunctionSymbol> symbol = fieldsAndFunctions.stream().filter(f -> f instanceof FunctionSymbol).map(f -> (FunctionSymbol) f).filter(f -> f.getName().equals(methodName) && f.isShared() == isShared).findFirst();
+    public boolean isFunctionDefined(String functionName) {
+        return fieldsAndFunctions.stream().filter(f -> f instanceof FunctionSymbol).anyMatch(f -> f.getName().equals(functionName));
+    }
+
+    public FunctionSymbol getFunction(String functionName, boolean isShared) {
+        Optional<FunctionSymbol> symbol = fieldsAndFunctions.stream().filter(f -> f instanceof FunctionSymbol).map(f -> (FunctionSymbol) f).filter(f -> f.getName().equals(functionName) && f.isShared() == isShared).findFirst();
         return symbol.orElse(null);
     }
 
@@ -124,6 +128,26 @@ public class TypeSymbol extends Symbol {
             return ((TypeSymbol) obj).getName().equals(getName());
         }
         return super.equals(obj);
+    }
+
+    public List<FieldSymbol> getFields() {
+        List<FieldSymbol> fields = new ArrayList<>();
+        for (Symbol symbol : fieldsAndFunctions) {
+            if (symbol instanceof FieldSymbol) {
+                fields.add((FieldSymbol) symbol);
+            }
+        }
+        return fields;
+    }
+
+    public List<FunctionSymbol> getFunctions() {
+        List<FunctionSymbol> functions = new ArrayList<>();
+        for (Symbol symbol : fieldsAndFunctions) {
+            if (symbol instanceof FunctionSymbol) {
+                functions.add((FunctionSymbol) symbol);
+            }
+        }
+        return functions;
     }
 
     public boolean isGeneric(String name) {

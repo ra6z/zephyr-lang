@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 
 public class BoundProgramScope extends BoundScope {
+    @Getter
+    private final String name;
 
     @Getter
     private final List<ExportSymbol> exports = new ArrayList<>();
@@ -20,8 +22,9 @@ public class BoundProgramScope extends BoundScope {
     private final SymbolTable<TypeSymbol, BoundTypeScope> types = new SymbolTable<>();
     private final HashMap<BoundProgramScope, String> debugImportedProgram = new HashMap<>();
 
-    public BoundProgramScope() {
+    public BoundProgramScope(String name) {
         super(null, BoundScopeKind.PROGRAM);
+        this.name = name;
     }
 
     public boolean isTypeDeclared(String typeName) {
