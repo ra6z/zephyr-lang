@@ -78,8 +78,9 @@ public class Binder {
                 case TYPE_DECLARATION -> declareTypeDeclaration((TypeDeclarationSyntax) statement);
                 case NATIVE_TYPE_DECLARATION -> declareNativeTypeDeclaration((NativeTypeDeclarationSyntax) statement);
                 case EXPORT_DECLARATION -> bindExportDeclaration((ExportDeclarationSyntax) statement);
-                default ->
-                        throw new RuntimeException(statement.getLocation() + " Unexpected statement kind: " + statement.getKind());
+                default -> {
+                    return new BoundProgram(programScope, diagnostics);
+                }
             }
         }
 

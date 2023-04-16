@@ -38,8 +38,13 @@ public final class Parser {
         List<StatementSyntax> statements = new ArrayList<>();
 
         while (current().getKind() != SyntaxKind.END_OF_FILE_TOKEN) {
+            SyntaxToken current = current();
+
             StatementSyntax statement = parseCompilationUnitMember();
             statements.add(statement);
+
+            if (current == current())
+                break;
         }
 
         SyntaxToken eofToken = matchToken(SyntaxKind.END_OF_FILE_TOKEN);
