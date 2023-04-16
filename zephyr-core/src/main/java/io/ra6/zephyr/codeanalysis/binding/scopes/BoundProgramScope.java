@@ -40,7 +40,11 @@ public class BoundProgramScope extends BoundScope {
     }
 
     public BoundTypeScope getTypeScope(TypeSymbol symbol) {
-        return types.getDefinition(symbol);
+        return types.getDeclarations().stream()
+                .filter(t -> t.getName().equals(symbol.getName()))
+                .findFirst()
+                .map(types::getDefinition)
+                .orElse(null);
     }
 
     public void declareType(TypeSymbol type) {

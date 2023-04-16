@@ -25,7 +25,7 @@ public class Runtime {
 
     public void registerProgram(BoundProgramScope program) {
         if (isProgramRegistered(program)) {
-            RuntimeLogger.debugf("Program %s is already registered.%n", program.getName());
+            RuntimeLogger.debugf("Program %s is already registered.", program.getName());
             return;
         }
 
@@ -33,16 +33,17 @@ public class Runtime {
 
         RegisteredProgram registeredProgram = new RegisteredProgram(program, new ProgramInterpreter(this, program));
         registeredPrograms.add(registeredProgram);
-        RuntimeLogger.debugf("Registered program: %s%n", program.getName());
+        RuntimeLogger.debugf("Registered program: %s", program.getName());
     }
 
     public RuntimeType getRuntimeType(BoundProgramScope program, TypeSymbol type) {
         if (!isProgramRegistered(program)) {
-            RuntimeLogger.debugf("Program %s is not registered.%n", program.getName());
+            RuntimeLogger.debugf("Program %s is not registered.", program.getName());
             return null;
         }
 
         if(!program.isTypeDeclared(type.getName())){
+            RuntimeLogger.tracef("Type %s is not declared in program %s.", type.getName(), program.getName());
             return null;
         }
 

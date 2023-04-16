@@ -24,26 +24,26 @@ public class RuntimeLogger {
         if (LOG_LEVEL < DEBUG) return;
 
         String prefix = String.format("%s[DEBUG]%s >> ", DEBUG_COLOR, ConsoleColors.ANSI_RESET);
-        OUT.printf(prefix + format, args);
+        OUT.printf(prefix + format + "%n", args);
     }
 
     public static void errorf(String format, Object... args) {
         String prefix = String.format("%s[ERROR]%s >> ", ERROR_COLOR, ConsoleColors.ANSI_RESET);
-        OUT.printf(prefix + format, args);
+        OUT.printf(prefix + format + "%n", args);
     }
 
     public static void infof(String format, Object... args) {
         if (LOG_LEVEL < INFO) return;
 
         String prefix = String.format("%s[INFO]%s >> ", INFO_COLOR, ConsoleColors.ANSI_RESET);
-        OUT.printf(prefix + format, args);
+        OUT.printf(prefix + format + "%n", args);
     }
 
     public static void tracef(String format, Object... args) {
         if (LOG_LEVEL < TRACE) return;
 
         String prefix = String.format("%s[TRACE]%s >> ", TRACE_COLOR, ConsoleColors.ANSI_RESET);
-        OUT.printf(prefix + format, args);
+        OUT.printf(prefix + format + "%n", args);
     }
 
 }

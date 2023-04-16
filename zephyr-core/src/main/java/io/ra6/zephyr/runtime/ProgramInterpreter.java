@@ -38,7 +38,8 @@ public class ProgramInterpreter {
 
     private void initializeStaticFields(RuntimeType runtimeType) {
         for (FieldSymbol field : runtimeType.getSharedFields()) {
-            BoundExpression initializer = runtimeType.getScope().getFieldInitializer(field);
+            BoundTypeScope scope = runtimeType.getScope();
+            BoundExpression initializer = scope.getFieldInitializer(field);
             if (initializer != null) {
                 Object value = evaluateExpression(initializer);
                 runtimeType.assignSharedField(field, value);
