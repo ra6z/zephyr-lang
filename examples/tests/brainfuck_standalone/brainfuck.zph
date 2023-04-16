@@ -1,0 +1,84 @@
+import "std:console";
+import "std:collections/stack";
+import "stacktest";
+
+type Brainfuck {
+    prv var stackPointer: int = 0;
+    prv var cells: char[];
+
+    prv const bracketStack: Stack<int> = new Stack<int>();
+
+    constructor(capacity: int) {
+        this.cells = new char[capacity];
+        this.reset();
+    }
+
+    fnc reset(): void{
+        this.stackPointer = 0;
+
+        var i: int = 0;
+        while(i < this.cells.length){
+            this.cells[i] = '\0';
+            i = i + 1;
+        }
+    }
+
+    pub fnc run(program: str): void {
+        const programLength: int = program.length();
+        Console.logs("Running program: " + program + " with a length of " + programLength + " characters.");
+
+        var programPointer: int = 0;
+        while(programPointer < programLength) {
+            var curChar: char = program.charAt(programPointer);
+
+            if(curChar == '>') {
+                this.stackPointer = this.stackPointer + 1;
+            }
+
+            if(curChar == '<') {
+                this.stackPointer = this.stackPointer - 1;
+            }
+
+            if(curChar == '+') {
+                this.cells[this.stackPointer] = this.cells[this.stackPointer] + 1;
+            }
+
+            if(curChar == '-') {
+                this.cells[this.stackPointer] = this.cells[this.stackPointer] - 1;
+            }
+
+            if(curChar == '[') {
+                this.bracketStack.push(programPointer);
+            }
+
+            if(curChar == '.') {
+                Console.putc(this.cells[this.stackPointer]);
+            }
+
+            if(curChar == ']') {
+                if(this.cells[this.stackPointer] != '\0') {
+                    programPointer = this.bracketStack.peek();
+                } else {
+                    this.bracketStack.pop();
+                }
+            }
+
+
+            programPointer = programPointer + 1;
+        }
+
+        Console.putc('\n');
+        this.reset();
+    }
+}
+
+type Program {
+    pub shared fnc main(argv: str[]): int {
+        const brainfuck: Brainfuck = new Brainfuck(100);
+        brainfuck.run("++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.");
+
+        return 0;
+    }
+}
+
+export Program;

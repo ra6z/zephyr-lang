@@ -1,8 +1,0 @@
-type Program {
-    pub shared fnc main(argc: int, argv: str[]): int {
-        const test: str[][] = [["a", "bb"], ["ccc", "dddd"]];
-        return test[0][1].length();
-    }
-}
-
-export Program;

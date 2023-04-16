@@ -1,0 +1,9 @@
+import "std:console";
+
+type Program {
+    pub shared fnc main(argv: str[]): void {
+        Console.logs("Hello, World");
+    }    
+}
+
+export Program;

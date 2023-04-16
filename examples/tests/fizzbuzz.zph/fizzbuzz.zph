@@ -1,0 +1,24 @@
+import "std:console";
+
+type FizzBuzz {
+    pub shared fnc main(argc: str[]): void {
+        const amount: int = 16;
+
+        var i: int = 1;
+        while(i < amount){
+            if(i % 3 == 0 && i % 5 == 0){
+                Console.logs("FizzBuzz");
+            } else if(i % 3 == 0) {
+                Console.logs("Fizz");
+            } else if(i % 5 == 0) {
+                Console.logs("Buzz");
+            } else {
+                Console.logi(i);
+            }
+        
+            i = i + 1;
+        }
+    }
+}
+
+export FizzBuzz;

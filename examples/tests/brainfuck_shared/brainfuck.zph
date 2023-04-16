@@ -1,0 +1,65 @@
+import "config";
+import "std:collections/stack";
+import "std:console";
+
+type Brainfuck {
+    prv shared var stackPointer: int = 0;
+    prv shared var cells: char[];
+    prv shared const bracketStack: Stack<int> = new Stack<int>();
+
+    prv shared fnc reset(): void {
+        Brainfuck.cells = new char[Config.capacity, '\0'];
+        Brainfuck.stackPointer = 0;
+    }
+
+    pub shared fnc run(program: str): void {
+        Brainfuck.reset();
+
+        const programLength: int = program.length();
+        Console.logs("Running program: " + program + " with a length of " + programLength + " characters.");
+
+        var programPointer: int = 0;
+        while(programPointer < programLength) {
+            var curChar: char = program.charAt(programPointer);
+
+            if(curChar == '>') {
+                Brainfuck.stackPointer = Brainfuck.stackPointer + 1;
+            }
+
+            if(curChar == '<') {
+                Brainfuck.stackPointer = Brainfuck.stackPointer - 1;
+            }
+
+            if(curChar == '+') {
+                Brainfuck.cells[Brainfuck.stackPointer] = Brainfuck.cells[Brainfuck.stackPointer] + 1;
+            }
+
+            if(curChar == '-') {
+                Brainfuck.cells[Brainfuck.stackPointer] = Brainfuck.cells[Brainfuck.stackPointer] - 1;
+            }
+
+            if(curChar == '[') {
+                Brainfuck.bracketStack.push(programPointer);
+            }
+
+            if(curChar == '.') {
+                Console.putc(Brainfuck.cells[Brainfuck.stackPointer]);
+            }
+
+            if(curChar == ']') {
+                if(Brainfuck.cells[Brainfuck.stackPointer] != '\0') {
+                    programPointer = Brainfuck.bracketStack.peek();
+                } else {
+                    Brainfuck.bracketStack.pop();
+                }
+            }
+
+
+            programPointer = programPointer + 1;
+        }
+
+        Console.putc('\n');
+    }
+}
+
+export Brainfuck;
