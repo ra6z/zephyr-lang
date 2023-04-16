@@ -30,7 +30,7 @@
 import "std:console";
 
 type Program {
-  pub shared fn main(argv: str[]): void {
+  pub shared fnc main(argv: str[]): void {
     Console.log("Hello, World!");
   }
 }
